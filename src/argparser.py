@@ -2,7 +2,7 @@ import argparse
 
 def parse_args():
     """
-    Parses command line arguments
+    Parse command line arguments
     """
     parser = argparse.ArgumentParser(description='Parse terminal input information')
 
