@@ -46,7 +46,8 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
             
             # save models each n episodes
             for k, agent in enumerate(agents):
-                agents[k].save_models('agent' + str(k))
+                string = auction_type + '_ag' + str(k) + '_r' + str(r) + '_' + str(n_episodes) + 'ep'
+                agents[k].save_models(string)
                     
                 # decrease learning rate for each neural network model
                 for param_group in agents[k].actor.optimizer.param_groups:

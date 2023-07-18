@@ -43,6 +43,7 @@ agents = [Agent(alpha=0.000025, beta=0.00025, input_dims=[1], tau=0.001, env=mul
 
 # Train models if trained==False
 if not trained:
+    print('Training models...')
     if auction == 'common_value':
         score_history = MAtrainLoopCommonValue(agents, multiagent_env, n_episodes, auction, vl=vl, vh=vh, eps=eps)
     else:
@@ -51,11 +52,13 @@ if not trained:
     playsound('stuff/beep.mp3') if alert else None # beep when training is done    
 
 # Else, load models
-else: 
-    for i in range(N):
-        agents[i].load_models('agent' + str(i))
+else:
+    print('Loading models...') 
+    for k in range(N):
+        string = auction + '_ag' + str(k) + '_r' + str(aversion_coef) + '_' + str(n_episodes) + 'ep'
+        agents[k].load_models(string)
 
-    # Tranfer learning step
-    auction = 'tariff_discount'
-    # r = 0.3
-    score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction, r=aversion_coef)
+    # # Tranfer learning step
+    # auction = 'tariff_discount'
+    # # r = 0.3
+    # score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction, r=aversion_coef)

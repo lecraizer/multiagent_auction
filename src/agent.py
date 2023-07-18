@@ -18,18 +18,18 @@ class Agent(object):
 
         self.actor = ActorNetwork(alpha, input_dims, layer1_size,
                                   layer2_size, n_actions=n_actions,
-                                  name='Actor')
+                                  name='actor')
         
         self.critic = CriticNetwork(beta, input_dims, layer1_size,
                                     layer2_size, n_actions=n_actions,
-                                    name='Critic')
+                                    name='critic')
 
         self.target_actor = ActorNetwork(alpha, input_dims, layer1_size,
                                          layer2_size, n_actions=n_actions,
-                                         name='TargetActor')
+                                         name='target_actor')
         self.target_critic = CriticNetwork(beta, input_dims, layer1_size,
                                            layer2_size, n_actions=n_actions,
-                                           name='TargetCritic')
+                                           name='target_critic')
 
         self.update_network_parameters(tau=1)
 
