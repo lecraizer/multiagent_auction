@@ -1,5 +1,5 @@
 # About
-Single and multiagent auction simulation using deep reinforcement learning algorithms
+Multiagent auction simulation using deep reinforcement learning algorithms
 
 # Deep RL in Auction Theory 
 
