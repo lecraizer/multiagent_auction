@@ -1,5 +1,5 @@
 # About
-Single and multiagent auction simulation using deep reinforcement learning algorithms
+Multiagent auction simulation using deep reinforcement learning algorithms
 
 # Deep RL in Auction Theory 
 
@@ -31,6 +31,6 @@ pip install -r requirements.txt
 #### To execute the program, just type the following line on the root directory 
 
 ```bash
-python src/main.py -e <number of episodes> -n <number of players> -b <batch size> -p <ponderated average size> -a <type of auction> -z <number of executions> -s <save test results in a plot> -t <use alert .mp3 file>
+python src/main.py -a <type of auction> -b <batch size> -d <load trained models> -e <number of episodes> -n <number of players> -p <ponderated average size> -r <aversion coefficient> -s <save test results in a plot> -t <use alert .mp3 file> -z <number of executions> 
 ```
 where the arguments may be passed after the __main.py__ call, as described above, otherwise the default parameters will be selected
