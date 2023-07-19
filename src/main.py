@@ -58,7 +58,7 @@ else:
         string = auction + '_ag' + str(k) + '_r' + str(aversion_coef) + '_' + str(n_episodes) + 'ep'
         agents[k].load_models(string)
 
-    # # Tranfer learning step
+    # Tranfer learning step
     # auction = 'tariff_discount'
-    # # r = 0.3
+    # r = 0.3
     # score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction, r=aversion_coef)

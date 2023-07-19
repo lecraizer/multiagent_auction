@@ -80,7 +80,7 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
             
             literature_error.append(np.mean(hist))
             if len(batch_loss) > 0:
-                loss_history.append(np.mean(batch_loss)) # bug fixed with batch_size=1
+                loss_history.append(np.mean(batch_loss))
             
             decrease_factor = 0.99
             # save models each n episodes
