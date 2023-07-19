@@ -66,8 +66,9 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
                 rewards, done = env.step(observations, actions, r)
                 agents[idx].remember(observations[idx], actions[idx], rewards[idx], observations[idx], int(done))
                 loss = agents[idx].learn()
-                batch_loss.append(loss)
-
+                if loss is not None:
+                    batch_loss.append(loss)
+                    
         done = True
         if ep % 50 == 0:
             print('\nEpisode', ep)
@@ -78,7 +79,8 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
                 hist = manualTesting(agents[i], N, 'ag'+str(i+1), ep, n_episodes, auc_type=auction_type, r=r)
             
             literature_error.append(np.mean(hist))
-            loss_history.append(np.mean(batch_loss)) # bug fixed with batch_size=1
+            if len(batch_loss) > 0:
+                loss_history.append(np.mean(batch_loss)) # bug fixed with batch_size=1
             
             decrease_factor = 0.99
             # save models each n episodes
