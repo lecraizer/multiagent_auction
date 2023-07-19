@@ -15,7 +15,7 @@ def parse_args():
     z = 1 # number of executions
     save_plot = 1 # save plot
     alert = 0 # alert
-    trained = False # set to True to load models instead of training them
+    trained = 0 # set to '1' to load models instead of training them
 
     parser.add_argument('-a', '--auction', type=str, help='Auction type')
     parser.add_argument('-b', '--batch', type=int, help='Batch size')

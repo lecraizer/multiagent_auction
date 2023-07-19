@@ -7,6 +7,42 @@ import matplotlib.pyplot as plt
 from utils import *
 
 
+def decrease_learning_rate(agents, decrease_factor):
+    '''
+    Decrease learning rate for each neural network model
+    '''
+    for k in range(len(agents)):
+        for param_group in agents[k].actor.optimizer.param_groups:
+            param_group['lr'] = param_group['lr'] * decrease_factor
+        for param_group in agents[k].critic.optimizer.param_groups:
+            param_group['lr'] = param_group['lr'] * decrease_factor
+        for param_group in agents[k].target_actor.optimizer.param_groups:
+            param_group['lr'] = param_group['lr'] * decrease_factor
+        for param_group in agents[k].target_critic.optimizer.param_groups:
+            param_group['lr'] = param_group['lr'] * decrease_factor
+
+    print('Learning rate: ', param_group['lr'])
+
+
+def plot_errors(literature_error, loss_history, N, auction_type, n_episodes):
+    '''
+    plot literature error history and loss history
+    '''
+    plt.close('all')
+    plt.plot(literature_error)
+    plt.title('Error history')
+    plt.xlabel('Episode')
+    plt.ylabel('Error')
+    plt.savefig('results/' + auction_type + '/N=' + str(N) + '/literature_error' + str(int(n_episodes/1000)) + 'k.png')
+
+    plt.close('all')
+    plt.plot(loss_history)
+    plt.title('Loss history')
+    plt.xlabel('Episode')
+    plt.ylabel('Loss')
+    plt.savefig('results/' + auction_type + '/N=' + str(N) + '/loss_history' + str(int(n_episodes/1000)) + 'k.png')
+
+
 def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
     '''
     Multiagent training loop function for general auctions
@@ -44,39 +80,18 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
             literature_error.append(np.mean(hist))
             loss_history.append(np.mean(batch_loss)) # bug fixed with batch_size=1
             
+            decrease_factor = 0.99
             # save models each n episodes
             for k, agent in enumerate(agents):
                 string = auction_type + '_ag' + str(k) + '_r' + str(r) + '_' + str(n_episodes) + 'ep'
                 agents[k].save_models(string)
-                    
-                # decrease learning rate for each neural network model
-                for param_group in agents[k].actor.optimizer.param_groups:
-                    param_group['lr'] = param_group['lr'] * 0.999
-                for param_group in agents[k].critic.optimizer.param_groups:
-                    param_group['lr'] = param_group['lr'] * 0.999
-                for param_group in agents[k].target_actor.optimizer.param_groups:
-                    param_group['lr'] = param_group['lr'] * 0.999
-                for param_group in agents[k].target_critic.optimizer.param_groups:
-                    param_group['lr'] = param_group['lr'] * 0.999
-            
-            print('Learning rate: ', param_group['lr'])
 
-        # plot literature error history
-        plt.close('all')
-        plt.plot(literature_error)
-        plt.title('Error history')
-        plt.xlabel('Episode')
-        plt.ylabel('Error')
-        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/literature_error' + str(int(n_episodes/1000)) + 'k.png')
+            # decrease learning rate each n episodes
+            decrease_learning_rate(agents, decrease_factor)
 
-        # plot model history loss
-        plt.close('all')
-        plt.plot(loss_history)
-        plt.title('Loss history')
-        plt.xlabel('Episode')
-        plt.ylabel('Loss')
-        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/loss_history' + str(int(n_episodes/1000)) + 'k.png')
-        
+        # plot literature error and loss history
+        plot_errors(literature_error, loss_history, N, auction_type, n_episodes)
+
     total_time = timeit.default_timer() - start_time
     print('\n\nTotal training time: ', str(timedelta(seconds=total_time)).split('.')[0])
 
@@ -109,7 +124,7 @@ def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price', 
                 batch_loss.append(loss)
 
         done = True
-        if ep % 1 == 0:
+        if ep % 50 == 0:
             print('\nEpisode', ep)
             print('Value:  ', common_value)
             print('Signals: ', observations)
@@ -120,22 +135,8 @@ def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price', 
             literature_error.append(hist)
             loss_history.append(np.mean(batch_loss)) # bug fixed with batch_size=1
 
-        # plot error history
-        plt.close('all')
-        plt.plot(literature_error)
-        plt.title('Error history')
-        plt.xlabel('Episode')
-        plt.ylabel('Error')
-        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/literature_error' + str(int(n_episodes/100)) + '.png')
-
-        # same for loss
-        plt.close('all')
-        plt.plot(loss_history)
-        plt.title('Loss history')
-        plt.xlabel('Episode')
-        plt.ylabel('Loss')
-        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/loss_history' + str(int(n_episodes/1000)) + 'k.png')
-
+        # plot literature error and loss history
+        plot_errors(literature_error, loss_history, N, auction_type, n_episodes)
 
     total_time = timeit.default_timer() - start_time
     print('\n\nTotal training time: ', str(timedelta(seconds=total_time)).split('.')[0])
