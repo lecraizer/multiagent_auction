@@ -46,6 +46,13 @@ where the arguments may be passed after the __main.py__ call, as described above
 
 ![Alt Text](results/examples/second_price_10k_r1.png)
 
++ Auction: First price
++ Players: 2
++ Risk aversion: 0.5
++ Episodes: 30k
+
+![Alt Text](results/examples/first_price_30k_r0.5.png)
+
 ## Acknowledgement
 
 This algorithm development is based on the OpenAI's DDPG algorithm. The code is inherit by [DDPG](https://github.com/openai/baselines/blob/master/baselines/ddpg/ddpg.py).
