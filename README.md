@@ -37,7 +37,7 @@ where the arguments may be passed after the __main.py__ call, as described above
 + Risk aversion: 1
 + Episodes: 30k
 
-![Alt Text](results/first_price/N=2/test30k_ag1.png)
+![Alt Text](results/examples/first_price_30k_r1.png)
 
 + Auction: Second price
 + Players: 2
