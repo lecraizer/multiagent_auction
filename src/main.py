@@ -49,7 +49,7 @@ if not trained:
     else:
         score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction, r=aversion_coef)
 
-    playsound('stuff/beep.mp3') if alert else None # beep when training is done    
+    playsound('beep.mp3') if alert else None # beep when training is done    
 
 # Else, load models
 else:
