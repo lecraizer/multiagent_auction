@@ -1,8 +1,8 @@
 # My files
 *.png
-# models/
+models/
 old/
-# results/
+results/
 stuff/
 attributes.git
 
