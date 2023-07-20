@@ -40,13 +40,13 @@ where the arguments may be passed after the __main.py__ call, as described above
 + Auction: First price
 + Players: 2
 + Risk aversion: 1
-+ Episode: 30k
++ Episodes: 30k
 
 ![Alt Text](results/first_price/N=2/test30k_ag1.png)
 
 + Auction: Second price
 + Players: 2
 + Risk aversion: 1
-+ Episode: 10k
-+ 
++ Episodes: 10k
+  
 ![Alt Text](results/second_price/N=2/test10k_ag1.png)
