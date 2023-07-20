@@ -48,4 +48,4 @@ where the arguments may be passed after the __main.py__ call, as described above
 
 ## Acknowledgement
 
-This algorithm development is based on the OpenAI's DDPG algorithm. The code is inherit by DDPG.
+This algorithm development is based on the OpenAI's DDPG algorithm. The code is inherit by [DDPG](https://github.com/openai/baselines/blob/master/baselines/ddpg/ddpg.py).
