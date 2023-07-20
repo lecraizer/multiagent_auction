@@ -1,8 +1,10 @@
 # My files
-*.png
 models/
 old/
-results/
+results/common_value
+results/first_price
+results/second_price
+results/tariff_discount
 stuff/
 attributes.git
 
