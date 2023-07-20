@@ -34,3 +34,13 @@ pip install -r requirements.txt
 python src/main.py -a <type of auction> -b <batch size> -d <load trained models> -e <number of episodes> -n <number of players> -p <ponderated average size> -r <aversion coefficient> -s <save test results in a plot> -t <use alert .mp3 file> -z <number of executions> 
 ```
 where the arguments may be passed after the __main.py__ call, as described above, otherwise the default parameters will be selected
+
+#### Examples of results
+
+First price auction, with N=2 players, r=1 (aversion coefficient), trained in 30k episodes.
+
+![Alt Text](results/first_price/N=2/test30k_ag1.png)
+
+Second price auction, with N=2 players, r=1 (aversion coefficient), trained in 10k episodes.
+
+![Alt Text](results/second_price/N=2/test10k_ag1.png)
