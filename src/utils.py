@@ -27,7 +27,7 @@ def formalize_name(auc_type):
     return auc_type
 
 
-def manualTesting(agent, N, k, episode, n_episodes, auc_type='first_price', r=1, max_revenue=1, eps=0.1, vl=0, vh=1):
+def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_price', r=1, max_revenue=1, eps=0.1, vl=0, vh=1):
     # reset plot variables
     plt.close('all')
 
@@ -74,9 +74,9 @@ def manualTesting(agent, N, k, episode, n_episodes, auc_type='first_price', r=1,
     axes.set_ylim([0, 1])
 
     try:
-        plt.savefig('results/' + auc_type + '/N=' + str(N) + '/test' + str(int(n_episodes/1000)) + 'k_' + str(k) + '.png')
+        plt.savefig('results/' + auc_type + '/N=' + str(N) + '/' + agent_name + '_' + str(int(n_episodes/1000)) + 'k_' + 'r' + str(r) + '.png')
     except:
         os.mkdir('results/' + auc_type + '/N=' + str(N))
-        plt.savefig('results/' + auc_type + '/N=' + str(N) + '/test' + str(int(n_episodes/1000)) + 'k_' + str(k) + '.png')
+        plt.savefig('results/' + auc_type + '/N=' + str(N) + '/' + agent_name + '_' + str(int(n_episodes/1000)) + 'k_' + 'r' + str(r) + '.png')
 
     return avg_error
