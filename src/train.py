@@ -33,15 +33,23 @@ def plot_errors(literature_error, loss_history, N, auction_type, n_episodes):
     plt.title('Error history')
     plt.xlabel('Episode')
     plt.ylabel('Error')
-    plt.savefig('results/' + auction_type + '/N=' + str(N) + '/literature_error' + str(int(n_episodes/1000)) + 'k.png')
+    try:
+        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/literature_error' + str(int(n_episodes/1000)) + 'k.png')
+    except:
+        os.mkdir('results/' + auction_type + '/N=' + str(N))
+        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/literature_error' + str(int(n_episodes/1000)) + 'k.png')
 
     plt.close('all')
     plt.plot(loss_history)
     plt.title('Loss history')
     plt.xlabel('Episode')
     plt.ylabel('Loss')
-    plt.savefig('results/' + auction_type + '/N=' + str(N) + '/loss_history' + str(int(n_episodes/1000)) + 'k.png')
 
+    try:
+        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/loss_history' + str(int(n_episodes/1000)) + 'k.png')
+    except:
+        os.mkdir('results/' + auction_type + '/N=' + str(N))
+        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/loss_history' + str(int(n_episodes/1000)) + 'k.png')
 
 def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
     '''
@@ -70,7 +78,7 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
                     batch_loss.append(loss)
                     
         done = True
-        if ep % 50 == 0:
+        if ep % 100 == 0:
             print('\nEpisode', ep)
             print('Values:  ', observations)
             print('Bids:    ', [agents[i].choose_action(observations[0], ep)[0] for i in range(len(agents))])
@@ -91,8 +99,8 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
             # decrease learning rate each n episodes
             decrease_learning_rate(agents, decrease_factor)
 
-        # plot literature error and loss history
-        plot_errors(literature_error, loss_history, N, auction_type, n_episodes)
+            # plot literature error and loss history
+            plot_errors(literature_error, loss_history, N, auction_type, n_episodes)
 
     total_time = timeit.default_timer() - start_time
     print('\n\nTotal training time: ', str(timedelta(seconds=total_time)).split('.')[0])
