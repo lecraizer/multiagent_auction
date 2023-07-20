@@ -44,7 +44,7 @@ where the arguments may be passed after the __main.py__ call, as described above
 + Risk aversion: 1
 + Episodes: 10k
 
-![Alt Text](results/second_price/N=2/test10k_ag1.png)
+![Alt Text](results/examples/second_price_10k_r1.png)
 
 ## Acknowledgement
 
