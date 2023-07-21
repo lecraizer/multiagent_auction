@@ -39,12 +39,6 @@ where the arguments may be passed after the __main.py__ call, as described above
 
 ![Alt Text](results/examples/first_price_30k_r1.png)
 
-+ Auction: Second price
-+ Players: 2
-+ Risk aversion: 1
-+ Episodes: 10k
-
-![Alt Text](results/examples/second_price_10k_r1.png)
 
 + Auction: First price
 + Players: 2
@@ -52,6 +46,21 @@ where the arguments may be passed after the __main.py__ call, as described above
 + Episodes: 30k
 
 ![Alt Text](results/examples/first_price_30k_r0.5.png)
+
++ Auction: Second price
++ Players: 2
++ Risk aversion: 1
++ Episodes: 30k
+
+![Alt Text](results/examples/second_price_30k_r1.png)
+
++ Auction: Second price
++ Players: 2
++ Risk aversion: 0.5
++ Episodes: 30k
+
+![Alt Text](results/examples/second_price_30k_r0.5.png)
+
 
 ## Acknowledgement
 
