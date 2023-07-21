@@ -32,26 +32,15 @@ where the arguments may be passed after the __main.py__ call, as described above
 
 ## Some results
 
-+ Auction: First price
-+ Players: 2
-+ Risk aversion: 1
-+ Episodes: 30k
 
-![Alt Text](results/examples/first_price_30k_r1.png)
+| First Price Auction | Second Price Auction |
+|--------------------------|--------------------------|
+| ![Figure 1](results/examples/first_price_30k_r1.png) | ![Figure 2](results/examples/second_price_30k_r1.png) |
+| <p align="center">1st price auction, risk aversion=1</p> | <p align="center">2nd price auction, risk aversion=1</p> |
+| ![Figure 1](results/examples/first_price_30k_r0.5.png) | ![Figure 2](results/examples/second_price_30k_r0.5.png) |
+| <p align="center">1st price auction, risk aversion=0.5</p> | <p align="center">2nd price auction, risk aversion=0.5</p> |
 
-+ Auction: Second price
-+ Players: 2
-+ Risk aversion: 1
-+ Episodes: 10k
 
-![Alt Text](results/examples/second_price_10k_r1.png)
-
-+ Auction: First price
-+ Players: 2
-+ Risk aversion: 0.5
-+ Episodes: 30k
-
-![Alt Text](results/examples/first_price_30k_r0.5.png)
 
 ## Acknowledgement
 
