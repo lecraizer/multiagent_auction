@@ -36,9 +36,9 @@ where the arguments may be passed after the __main.py__ call, as described above
 | First Price Auction | Second Price Auction |
 |--------------------------|--------------------------|
 | ![Figure 1](results/examples/first_price_30k_r1.png) | ![Figure 2](results/examples/second_price_30k_r1.png) |
-| *1st price auction, risk aversion=1*   | *2nd price auction, risk aversion=1*   |
+| <p align="center">1st price auction, risk aversion=1</p> | <p align="center">2nd price auction, risk aversion=1</p> |
 | ![Figure 1](results/examples/first_price_30k_r0.5.png) | ![Figure 2](results/examples/second_price_30k_r0.5.png) |
-| *1st price auction, risk aversion=1*   | *2nd price auction, risk aversion=0.5*   |
+| <p align="center">1st price auction, risk aversion=0.5</p> | <p align="center">2nd price auction, risk aversion=0.5</p> |
 
 
 
