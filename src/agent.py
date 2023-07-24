@@ -45,26 +45,25 @@ class Agent(object):
         self.actor.train()
         return mu_prime.cpu().detach().numpy()
 
-    def remember(self, state, action, reward, new_state, done):
-        self.memory.store_transition(state, action, reward, new_state, done)
+    def remember(self, state, action, reward, done):
+        self.memory.store_transition(state, action, reward, done)
 
     def learn(self):
         if self.memory.mem_cntr < self.batch_size:
             return
-        state, action, reward, new_state, done = \
-                                      self.memory.sample_buffer(self.batch_size)
+        
+        state, action, reward, done = self.memory.sample_buffer(self.batch_size)
 
         reward = T.tensor(reward, dtype=T.float).to(self.critic.device)
         done = T.tensor(done).to(self.critic.device)
-        new_state = T.tensor(new_state, dtype=T.float).to(self.critic.device)
         action = T.tensor(action, dtype=T.float).to(self.critic.device)
         state = T.tensor(state, dtype=T.float).to(self.critic.device)
 
         self.target_actor.eval()
         self.target_critic.eval()
         self.critic.eval()
-        target_actions = self.target_actor.forward(new_state)
-        critic_value_ = self.target_critic.forward(new_state, target_actions)
+        target_actions = self.target_actor.forward(state)
+        critic_value_ = self.target_critic.forward(state, target_actions)
         critic_value = self.critic.forward(state, action)
 
         target = []

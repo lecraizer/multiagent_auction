@@ -72,7 +72,7 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
             for new_action in np.linspace(0.001, 0.999, 10):
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards, done = env.step(observations, actions, r)
-                agents[idx].remember(observations[idx], actions[idx], rewards[idx], observations[idx], int(done))
+                agents[idx].remember(observations[idx], actions[idx], rewards[idx], int(done))
                 loss = agents[idx].learn()
                 if loss is not None:
                     batch_loss.append(loss)
