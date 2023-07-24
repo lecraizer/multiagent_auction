@@ -107,31 +107,14 @@ class Agent(object):
         target_actor_dict = dict(target_actor_params)
 
         for name in critic_state_dict:
-            critic_state_dict[name] = tau*critic_state_dict[name].clone() + \
-                                      (1-tau)*target_critic_dict[name].clone()
+            critic_state_dict[name] = tau*critic_state_dict[name].clone() + (1-tau)*target_critic_dict[name].clone()
 
         self.target_critic.load_state_dict(critic_state_dict)
 
         for name in actor_state_dict:
-            actor_state_dict[name] = tau*actor_state_dict[name].clone() + \
-                                      (1-tau)*target_actor_dict[name].clone()
+            actor_state_dict[name] = tau*actor_state_dict[name].clone() + (1-tau)*target_actor_dict[name].clone()
         self.target_actor.load_state_dict(actor_state_dict)
-
-        """
-        #Verify that the copy assignment worked correctly
-        target_actor_params = self.target_actor.named_parameters()
-        target_critic_params = self.target_critic.named_parameters()
-
-        critic_state_dict = dict(target_critic_params)
-        actor_state_dict = dict(target_actor_params)
-        print('\nActor Networks', tau)
-        for name, param in self.actor.named_parameters():
-            print(name, T.equal(param, actor_state_dict[name]))
-        print('\nCritic Networks', tau)
-        for name, param in self.critic.named_parameters():
-            print(name, T.equal(param, critic_state_dict[name]))
-        input()
-        """
+        
     def save_models(self, name):
         self.actor.save_checkpoint(name)
         self.target_actor.save_checkpoint(name)
