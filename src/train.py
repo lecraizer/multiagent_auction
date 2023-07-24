@@ -63,7 +63,6 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
     loss_history = []
     for ep in range(n_episodes):
         observations = env.reset()
-        done = False
         
         batch_loss = []
         for idx in range(N):
@@ -71,13 +70,12 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
 
             for new_action in np.linspace(0.001, 0.999, 10):
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
-                rewards, done = env.step(observations, actions, r)
-                agents[idx].remember(observations[idx], actions[idx], rewards[idx], int(done))
+                rewards = env.step(observations, actions, r)
+                agents[idx].remember(observations[idx], actions[idx], rewards[idx])
                 loss = agents[idx].learn()
                 if loss is not None:
                     batch_loss.append(loss)
                     
-        done = True
         if ep % 100 == 0:
             print('\nEpisode', ep)
             print('Values:  ', observations)
@@ -118,7 +116,6 @@ def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price', 
     loss_history = []
     for ep in range(n_episodes):
         common_value, observations = env.reset()
-        done = False
         
         original_actions = [agents[i].choose_action(observations[i], ep)[0] for i in range(N)]
         original_rewards = env.step(common_value, original_actions)[0]
@@ -128,12 +125,11 @@ def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price', 
             for new_action in np.linspace(0.001, 0.999*N, 10): # test n different actions
             # or try n=100 random actions
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
-                rewards, done = env.step(common_value, actions)
-                agents[idx].remember(observations[idx], actions[idx], rewards[idx], observations[idx], int(done))
+                rewards = env.step(common_value, actions)
+                agents[idx].remember(observations[idx], actions[idx], rewards[idx], observations[idx])
                 loss = agents[idx].learn()
                 batch_loss.append(loss)
 
-        done = True
         if ep % 50 == 0:
             print('\nEpisode', ep)
             print('Value:  ', common_value)
@@ -162,14 +158,13 @@ def trainLoop(agent, env, n_episodes, ponderated_avg, N, BS, k):
     score_history = []
     for i in range(n_episodes):
         obs = env.reset()
-        done = False
         score = 0
         print('\nEpisode', i)
         print('Value: ', obs)
         act = agent.choose_action(obs)
         print('Bid:   ', act[0])
-        new_state, reward, done, info = env.step(act)
-        agent.remember(obs, act, reward, new_state, int(done))
+        new_state, reward, info = env.step(act)
+        agent.remember(obs, act, reward, new_state)
         agent.learn()
         score += reward
         obs = new_state

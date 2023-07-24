@@ -45,17 +45,16 @@ class Agent(object):
         self.actor.train()
         return mu_prime.cpu().detach().numpy()
 
-    def remember(self, state, action, reward, done):
-        self.memory.store_transition(state, action, reward, done)
+    def remember(self, state, action, reward):
+        self.memory.store_transition(state, action, reward)
 
     def learn(self):
         if self.memory.mem_cntr < self.batch_size:
             return
         
-        state, action, reward, done = self.memory.sample_buffer(self.batch_size)
+        state, action, reward = self.memory.sample_buffer(self.batch_size)
 
         reward = T.tensor(reward, dtype=T.float).to(self.critic.device)
-        done = T.tensor(done).to(self.critic.device)
         action = T.tensor(action, dtype=T.float).to(self.critic.device)
         state = T.tensor(state, dtype=T.float).to(self.critic.device)
 
@@ -68,7 +67,7 @@ class Agent(object):
 
         target = []
         for j in range(self.batch_size):
-            target.append(reward[j] + self.gamma*critic_value_[j]*done[j])
+            target.append(reward[j] + self.gamma*critic_value_[j])
         target = T.tensor(target).to(self.critic.device)
         target = target.view(self.batch_size, 1)
 

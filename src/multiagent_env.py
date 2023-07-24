@@ -28,13 +28,9 @@ class MAFirstPriceAuctionEnv(Env):
         
     def step(self, states, actions, r):
         rewards = self.reward_n_players(states, actions, r)
-        
-        # End episode
-        done = True
-        info = {} # set placeholder for info
 
         # Return step information
-        return rewards, done
+        return rewards
 
     def reset(self):
         # Reset state - input new random private value
@@ -65,13 +61,9 @@ class MASecondPriceAuctionEnv(Env):
         
     def step(self, states, actions, r):
         rewards = self.reward_n_players(states, actions, r)
-        
-        # End episode
-        done = True
-        info = {} # set placeholder for info
 
         # Return step information
-        return rewards, done
+        return rewards
 
     def reset(self):
         # Reset state - input new random private value
@@ -101,12 +93,8 @@ class MATariffDiscountEnv(Env):
     def step(self, states, actions, r):
         rewards = self.reward_n_players(states, actions, r)
         
-        # End episode
-        done = True
-        info = {} # set placeholder for info
-
         # Return step information
-        return rewards, done
+        return rewards
 
     def reset(self):
         # Reset state - input new random private value
@@ -138,13 +126,9 @@ class MACommonPriceAuctionEnv(Env):
 
     def step(self, state, actions):
         rewards = self.reward_n_players(state, actions)
-        
-        # End episode
-        done = True
-        info = {} # set placeholder for info
 
         # Return step information
-        return rewards, done
+        return rewards
 
     def reset(self):
 
@@ -182,13 +166,9 @@ class MAAlternativeCommonPriceAuctionEnv(Env):
         
     def step(self, state, actions):
         rewards = self.reward_n_players(state, actions)
-        
-        # End episode
-        done = True
-        info = {} # set placeholder for info
 
         # Return step information
-        return rewards, done
+        return rewards
 
     def reset(self):
         # Reset state - input new random common value
