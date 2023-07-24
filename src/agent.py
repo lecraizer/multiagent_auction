@@ -142,20 +142,3 @@ class Agent(object):
         for param in current_critic_dict:
             print(param, T.equal(original_critic_dict[param], current_critic_dict[param]))
         input()
-
-
-    def decrease_learning_rate(self, agents, decrease_factor):
-    '''
-    Decrease learning rate for each neural network model
-    '''
-    for k in range(len(agents)):
-        for param_group in agents[k].actor.optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * decrease_factor
-        for param_group in agents[k].critic.optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * decrease_factor
-        for param_group in agents[k].target_actor.optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * decrease_factor
-        for param_group in agents[k].target_critic.optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * decrease_factor
-
-    print('Learning rate: ', param_group['lr'])
