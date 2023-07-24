@@ -7,50 +7,6 @@ import matplotlib.pyplot as plt
 from utils import *
 
 
-def decrease_learning_rate(agents, decrease_factor):
-    '''
-    Decrease learning rate for each neural network model
-    '''
-    for k in range(len(agents)):
-        for param_group in agents[k].actor.optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * decrease_factor
-        for param_group in agents[k].critic.optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * decrease_factor
-        for param_group in agents[k].target_actor.optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * decrease_factor
-        for param_group in agents[k].target_critic.optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * decrease_factor
-
-    print('Learning rate: ', param_group['lr'])
-
-
-def plot_errors(literature_error, loss_history, N, auction_type, n_episodes):
-    '''
-    plot literature error history and loss history
-    '''
-    plt.close('all')
-    plt.plot(literature_error)
-    plt.title('Error history')
-    plt.xlabel('Episode')
-    plt.ylabel('Error')
-    try:
-        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/literature_error' + str(int(n_episodes/1000)) + 'k.png')
-    except:
-        os.mkdir('results/' + auction_type + '/N=' + str(N))
-        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/literature_error' + str(int(n_episodes/1000)) + 'k.png')
-
-    plt.close('all')
-    plt.plot(loss_history)
-    plt.title('Loss history')
-    plt.xlabel('Episode')
-    plt.ylabel('Loss')
-
-    try:
-        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/loss_history' + str(int(n_episodes/1000)) + 'k.png')
-    except:
-        os.mkdir('results/' + auction_type + '/N=' + str(N))
-        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/loss_history' + str(int(n_episodes/1000)) + 'k.png')
-
 def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
     '''
     Multiagent training loop function for general auctions

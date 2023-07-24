@@ -27,6 +27,23 @@ def formalize_name(auc_type):
     return auc_type
 
 
+def decrease_learning_rate(agents, decrease_factor):
+    '''
+    Decrease learning rate for each neural network model
+    '''
+    for k in range(len(agents)):
+        for param_group in agents[k].actor.optimizer.param_groups:
+            param_group['lr'] = param_group['lr'] * decrease_factor
+        for param_group in agents[k].critic.optimizer.param_groups:
+            param_group['lr'] = param_group['lr'] * decrease_factor
+        for param_group in agents[k].target_actor.optimizer.param_groups:
+            param_group['lr'] = param_group['lr'] * decrease_factor
+        for param_group in agents[k].target_critic.optimizer.param_groups:
+            param_group['lr'] = param_group['lr'] * decrease_factor
+
+    print('Learning rate: ', param_group['lr'])
+    
+
 def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_price', r=1, max_revenue=1, eps=0.1, vl=0, vh=1):
     # reset plot variables
     plt.close('all')
@@ -80,3 +97,32 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
         plt.savefig('results/' + auc_type + '/N=' + str(N) + '/' + agent_name + '_' + str(int(n_episodes/1000)) + 'k_' + 'r' + str(r) + '.png')
 
     return avg_error
+
+
+def plot_errors(literature_error, loss_history, N, auction_type, n_episodes):
+    '''
+    plot literature error history and loss history
+    '''
+    plt.close('all')
+    plt.plot(literature_error)
+    plt.title('Error history')
+    plt.xlabel('Episode')
+    plt.ylabel('Error')
+    try:
+        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/literature_error' + str(int(n_episodes/1000)) + 'k.png')
+    except:
+        os.mkdir('results/' + auction_type + '/N=' + str(N))
+        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/literature_error' + str(int(n_episodes/1000)) + 'k.png')
+
+    plt.close('all')
+    plt.plot(loss_history)
+    plt.title('Loss history')
+    plt.xlabel('Episode')
+    plt.ylabel('Loss')
+
+    try:
+        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/loss_history' + str(int(n_episodes/1000)) + 'k.png')
+    except:
+        os.mkdir('results/' + auction_type + '/N=' + str(N))
+        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/loss_history' + str(int(n_episodes/1000)) + 'k.png')
+  
