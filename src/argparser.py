@@ -16,11 +16,13 @@ def parse_args():
     save_plot = 1 # save plot
     alert = 0 # alert
     trained = 0 # set to '1' to load models instead of training them
+    create_gif = 0 # create gif
 
     parser.add_argument('-a', '--auction', type=str, help='Auction type')
     parser.add_argument('-b', '--batch', type=int, help='Batch size')
     parser.add_argument('-d', '--trained', type=int, help='Load models instead of training them')
     parser.add_argument('-e', '--episodes', type=int, help='Total number of training episodes')
+    parser.add_argument('-g', '--gif', type=int, help='Create state-actions plot gif')
     parser.add_argument('-n', '--players', type=int, help='Total number of players')
     parser.add_argument('-p', '--ponderated', type=int, help='Ponderated average size')
     parser.add_argument('-r', '--aversion_coef', type=float, help='Aversion coefficient')
@@ -38,6 +40,8 @@ def parse_args():
         trained = args.trained
     if args.episodes: # e
         n_episodes = args.episodes
+    if args.gif: # g
+        create_gif = args.gif
     if args.players: # n
         N = args.players
     if args.ponderated: # p
@@ -55,6 +59,7 @@ def parse_args():
     print('Batch size: ', BS) # b
     print('Load models: ', trained) # d
     print('Number of episodes: ', n_episodes) # e
+    print('Create gif: ', create_gif) # g
     print('Number of players: ', N) # n
     print('Ponderated average size: ', ponderated_avg) # p
     print('Aversion coefficient: ', r) # r
@@ -63,4 +68,4 @@ def parse_args():
     print('Number of executions: ', z) # z
     print('\n')
 
-    return auction, trained, BS, n_episodes, N, ponderated_avg, r, save_plot, alert, z
+    return auction, BS, trained, n_episodes, create_gif, N, ponderated_avg, r, save_plot, alert, z

@@ -6,6 +6,7 @@ results/first_price
 results/second_price
 results/tariff_discount
 stuff/
+.tmp/
 attributes.git
 
 # Byte-compiled / optimized / DLL files

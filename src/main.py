@@ -11,14 +11,13 @@ from datetime import timedelta
 from utils import *
 from train import *
 from agent import Agent
-from multiagent_env import *
+from env import *
 from argparser import parse_args
 
 
 ### --- Parsing arguments --- ###
 
-auction, trained, BS, n_episodes, N, ponderated_avg, aversion_coef, save_plot, alert, z = parse_args() # get parameters
-
+auction, BS, trained, n_episodes, create_gif, N, ponderated_avg, aversion_coef, save_plot, alert, z = parse_args() # get parameters
 
 ### --- Creating environment --- ###
 
@@ -41,13 +40,12 @@ agents = [Agent(alpha=0.000025, beta=0.00025, input_dims=[1], tau=0.001, env=mul
 
 ### --- Training step --- ###
 
-# Train models if trained==False
-if not trained:
+if not trained: # Train models if trained==False
     print('Training models...')
     if auction == 'common_value':
         score_history = MAtrainLoopCommonValue(agents, multiagent_env, n_episodes, auction, vl=vl, vh=vh, eps=eps)
     else:
-        score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction, r=aversion_coef)
+        score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction, r=aversion_coef, gif=create_gif)
 
     playsound('beep.mp3') if alert else None # beep when training is done    
 

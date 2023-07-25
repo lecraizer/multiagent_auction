@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt 
 import numpy as np
+import imageio
+import glob
 import math
 import os
 
@@ -126,3 +128,23 @@ def plot_errors(literature_error, loss_history, N, auction_type, n_episodes):
         os.mkdir('results/' + auction_type + '/N=' + str(N))
         plt.savefig('results/' + auction_type + '/N=' + str(N) + '/loss_history' + str(int(n_episodes/1000)) + 'k.png')
   
+
+def create_gif(img_duration=0.3):
+    '''
+    Create gif from png files
+    '''
+    input_folder = "results/.tmp/*.png"
+    output_gif = "results/gifs/gif.gif"
+
+    # Get the list of PNG files in the input folder
+    png_files = glob.glob(input_folder)
+
+    # Read all PNG files and store them in a list
+    frames = [imageio.imread(png_file) for png_file in png_files]
+
+    print("Creating GIF from {} images".format(len(frames)))
+
+    # Save the frames as an animated GIF
+    imageio.mimsave(output_gif, frames, duration=img_duration)
+
+    print("GIF created successfully!")

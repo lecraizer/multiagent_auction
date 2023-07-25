@@ -3,11 +3,12 @@ import random
 import numpy as np
 from datetime import timedelta
 import matplotlib.pyplot as plt
-
+import shutil
+import os
 from utils import *
 
 
-def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
+def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, gif=False):
     '''
     Multiagent training loop function for general auctions
     '''
@@ -32,7 +33,7 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
                 if loss is not None:
                     batch_loss.append(loss)
                     
-        if ep % 100 == 0:
+        if ep % 10 == 0:
             print('\nEpisode', ep)
             print('Values:  ', observations)
             print('Bids:    ', [agents[i].choose_action(observations[0], ep)[0] for i in range(len(agents))])
@@ -53,13 +54,22 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1):
             # decrease learning rate each n episodes
             decrease_learning_rate(agents, decrease_factor)
 
-            # plot literature error and loss history
+            # # plot literature error and loss history
             plot_errors(literature_error, loss_history, N, auction_type, n_episodes)
+
+            if gif:
+                png_file = 'results/' + auction_type + '/N=' + str(N) + '/' + 'ag1_' + str(int(n_episodes/1000)) + 'k_' + 'r' + str(r) + '.png'
+                destination_file = 'results/.tmp/' + str(ep) + '.png'
+                shutil.copy(png_file, destination_file)
+
+    if gif:
+        create_gif()
+        os.system('rm results/.tmp/*.png') # remove images from results/images_for_gif
 
     total_time = timeit.default_timer() - start_time
     print('\n\nTotal training time: ', str(timedelta(seconds=total_time)).split('.')[0])
 
-
+    
 def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price', vl=0, vh=1, eps=0.1):
     '''
     Multiagent training loop function for common value auctions
@@ -96,13 +106,12 @@ def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price', 
                 hist = manualTesting(agents[i], N, 'ag'+str(i+1), ep, n_episodes, auc_type=auction_type, vl=vl, vh=vh, eps=eps)
             literature_error.append(hist)
             loss_history.append(np.mean(batch_loss)) # bug fixed with batch_size=1
-
+           
         # plot literature error and loss history
         plot_errors(literature_error, loss_history, N, auction_type, n_episodes)
 
     total_time = timeit.default_timer() - start_time
     print('\n\nTotal training time: ', str(timedelta(seconds=total_time)).split('.')[0])
-
 
 
 
