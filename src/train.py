@@ -24,8 +24,6 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, max_re
         batch_loss = []
         for idx in range(N):
             original_actions = [agents[i].choose_action(observations[i], ep)[0] for i in range(N)]
-            print('Actions: ', original_actions)
-
             for new_action in np.linspace(0.001, 0.999, 10):
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(observations, actions, r)
