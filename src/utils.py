@@ -134,7 +134,7 @@ def create_gif(img_duration=0.3):
     Create gif from png files
     '''
     input_folder = "results/.tmp/*.png"
-    output_gif = "results/gifs/gif.gif"
+    output_gif = "results/gifs/evolution.gif"
 
     # Get the list of PNG files in the input folder
     png_files = glob.glob(input_folder)

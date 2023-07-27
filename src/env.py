@@ -73,17 +73,18 @@ class MASecondPriceAuctionEnv(Env):
     
 
 class MATariffDiscountEnv(Env):
-    def __init__(self, n_players):
+    def __init__(self, n_players, max_revenue):
         self.bid_space = Box(low=np.array([0]), high=np.array([1]), dtype=np.float32) # actions space
         self.observation_space = Box(low=np.array([0]), high=np.array([1]), dtype=np.float32)
         self.states_shape = self.observation_space.shape
         self.N = n_players
+        self.max_revenue = max_revenue 
+
 
     def reward_n_players(self, costs, bids, r):
         rewards = [0]*self.N
         idx = np.argmax(bids)
-        max_revenue = 1
-        winner_reward = max_revenue*(1 - bids[idx]) - costs[idx]
+        winner_reward = self.max_revenue*(1 - bids[idx]) - costs[idx]
         if winner_reward > 0:
             rewards[idx] = winner_reward**r
         else:

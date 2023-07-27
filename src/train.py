@@ -32,8 +32,11 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, gif=Fa
                 loss = agents[idx].learn()
                 if loss is not None:
                     batch_loss.append(loss)
-                    
-        if ep % 10 == 0:
+
+        save_interval = 10
+        decrease_factor = 0.9999*decrease_factor
+
+        if ep % save_interval == 0:
             print('\nEpisode', ep)
             print('Values:  ', observations)
             print('Bids:    ', [agents[i].choose_action(observations[0], ep)[0] for i in range(len(agents))])
@@ -45,7 +48,6 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, gif=Fa
             if len(batch_loss) > 0:
                 loss_history.append(np.mean(batch_loss))
             
-            decrease_factor = 0.99
             # save models each n episodes
             for k, agent in enumerate(agents):
                 string = auction_type + '_ag' + str(k) + '_r' + str(r) + '_' + str(n_episodes) + 'ep'
