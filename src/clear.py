@@ -1,4 +1,5 @@
 import os
+import argparse
 
 
 def clear_data():
@@ -23,6 +24,14 @@ def main():
         print("Data was not cleared.")
     else:
         print("Invalid input. Please enter 'yes' or 'no'.")
+
+    parser = argparse.ArgumentParser(description='Parse terminal input information')
+    parser.add_argument('-g', '--gif', type=str, help='Clean gifs folder')
+    args = parser.parse_args()
+
+    if args.gif: # g
+        os.system('rm -rf gifs/' + '*')
+        print("\nGifs cleared successfully.")
 
 if __name__ == "__main__":
     main()
