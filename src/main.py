@@ -29,7 +29,7 @@ elif auction == 'common_value':
     vl, vh, eps = 0, 1, 0.3
     multiagent_env = MACommonPriceAuctionEnv(N, vl=vl, vh=vh, eps=eps)
 elif auction == 'tariff_discount':
-    max_revenue = 1
+    max_revenue = 1.5
     multiagent_env = MATariffDiscountEnv(N, max_revenue=1)
 
 

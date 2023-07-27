@@ -12,6 +12,8 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, gif=Fa
     '''
     Multiagent training loop function for general auctions
     '''
+    save_interval = 10
+    decrease_factor = 0.9999*save_interval
     np.random.seed(0)
     start_time = timeit.default_timer()
     N = len(agents)
@@ -32,9 +34,6 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, gif=Fa
                 loss = agents[idx].learn()
                 if loss is not None:
                     batch_loss.append(loss)
-
-        save_interval = 10
-        decrease_factor = 0.9999*decrease_factor
 
         if ep % save_interval == 0:
             print('\nEpisode', ep)
