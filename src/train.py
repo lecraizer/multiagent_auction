@@ -8,7 +8,7 @@ import os
 from utils import *
 
 
-def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, gif=False, save_interval=10):
+def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, max_revenue=1, gif=False, save_interval=10):
     '''
     Multiagent training loop function for general auctions
     '''
@@ -24,6 +24,7 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, gif=Fa
         batch_loss = []
         for idx in range(N):
             original_actions = [agents[i].choose_action(observations[i], ep)[0] for i in range(N)]
+            print('Actions: ', original_actions)
 
             for new_action in np.linspace(0.001, 0.999, 10):
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
@@ -40,7 +41,7 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, gif=Fa
             print('Bids:    ', [agents[i].choose_action(observations[0], ep)[0] for i in range(len(agents))])
             print('Rewards: ', rewards)
             for i in range(len(agents)):
-                hist = manualTesting(agents[i], N, 'ag'+str(i+1), ep, n_episodes, auc_type=auction_type, r=r)
+                hist = manualTesting(agents[i], N, 'ag'+str(i+1), ep, n_episodes, auc_type=auction_type, r=r, max_revenue=max_revenue)
             
             literature_error.append(np.mean(hist))
             if len(batch_loss) > 0:
