@@ -29,7 +29,7 @@ elif auction == 'common_value':
     vl, vh, eps = 0, 1, 0.3
     multiagent_env = MACommonPriceAuctionEnv(N, vl=vl, vh=vh, eps=eps)
 elif auction == 'tariff_discount':
-    max_revenue = 1.5
+    max_revenue = 1
     multiagent_env = MATariffDiscountEnv(N, max_revenue=1)
 
 
@@ -41,12 +41,14 @@ agents = [Agent(alpha=0.000025, beta=0.00025, input_dims=[1], tau=0.001, env=mul
 
 ### --- Training step --- ###
 
+save_interval = 10
+
 if not trained: # Train models if trained==False
     print('Training models...')
     if auction == 'common_value':
-        score_history = MAtrainLoopCommonValue(agents, multiagent_env, n_episodes, auction, vl=vl, vh=vh, eps=eps)
+        score_history = MAtrainLoopCommonValue(agents, multiagent_env, n_episodes, auction, vl=vl, vh=vh, eps=eps, save_interval=save_interval)
     else:
-        score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction, r=aversion_coef, gif=create_gif)
+        score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction, r=aversion_coef, gif=create_gif, save_interval=save_interval)
 
     playsound('beep.mp3') if alert else None # beep when training is done    
 
