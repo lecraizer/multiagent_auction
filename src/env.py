@@ -99,7 +99,7 @@ class MATariffDiscountEnv(Env):
 
     def reset(self):
         # Reset state - input new random private value
-        self.costs = [random.random() for _ in range(self.N)]
+        self.costs = [random.random()*self.max_revenue for _ in range(self.N)]
         return self.costs
 
 

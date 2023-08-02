@@ -35,8 +35,9 @@ elif auction == 'tariff_discount':
 
 ### --- Creating agents --- ###
 
-agents = [Agent(alpha=0.000025, beta=0.00025, input_dims=[1], tau=0.001, env=multiagent_env,
-            batch_size=BS,  layer1_size=400, layer2_size=400, n_actions=1, total_eps=n_episodes) for i in range(N)]
+agents = [Agent(alpha=0.000025, beta=0.00025, input_dims=[1], tau=0.001, 
+                env=multiagent_env, batch_size=BS, layer1_size=400, layer2_size=400, 
+                n_actions=1, total_eps=n_episodes) for i in range(N)]
 
 
 ### --- Training step --- ###
