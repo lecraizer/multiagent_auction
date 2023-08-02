@@ -40,7 +40,7 @@ class Agent(object):
         noise = T.tensor(np.random.normal(0, 0.1), dtype=T.float).to(self.actor.device)
         mu_prime = mu + (noise*(1-(episode/self.total_episodes)))
         # mu_prime = mu_prime.clamp(0, 1)
-        # mu_prime = mu
+        mu_prime = mu
         
         self.actor.train()
         return mu_prime.cpu().detach().numpy()

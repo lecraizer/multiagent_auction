@@ -51,6 +51,8 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
     plt.close('all')
 
     states = np.linspace(0, 1, 100)
+    if auc_type == 'tariff_discount':
+        states = np.linspace(0, max_revenue, 100)
     actions = []
     avg_error = 0
     for state in states:
@@ -91,6 +93,9 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
     axes = plt.gca()
     axes.set_xlim([0, 1])
     axes.set_ylim([0, 1])
+
+    if auc_type == 'tariff_discount':
+        axes.set_xlim([0, max_revenue])
 
     try:
         plt.savefig('results/' + auc_type + '/N=' + str(N) + '/' + agent_name + '_' + str(int(n_episodes/1000)) + 'k_' + 'r' + str(r) + '.png')
