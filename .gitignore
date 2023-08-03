@@ -5,7 +5,7 @@ results/common_value
 results/first_price
 results/second_price
 results/tariff_discount
-# results/all_pay
+results/all_pay
 stuff/
 .tmp/
 attributes.git
