@@ -113,6 +113,7 @@ class ActorNetwork(nn.Module):
         x = self.fc2(x)
         # x = self.bn2(x)
 
+        # x = T.sigmoid(self.mu(x))*3
         x = T.sigmoid(self.mu(x))
         return x
 

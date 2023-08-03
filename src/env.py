@@ -136,11 +136,14 @@ class MACommonPriceAuctionEnv(Env):
         # random common value in [vl, vh]
         self.common_value = random.uniform(self.vl, self.vh)
 
+        least = max(self.common_value - self.eps, self.vl)
+        top = min(self.common_value + self.eps, self.vh)
+
         # list of signals in [common_value - epsilon, common_value + epsilon]
-        self.signals = [random.uniform(self.common_value - self.eps, self.common_value + self.eps) for _ in range(self.N)]
+        self.signals = [random.uniform(least, top) for _ in range(self.N)]
 
         # clamp 0,1
-        self.signals = np.clip(self.signals, 0, 1)
+        # self.signals = np.clip(self.signals, 0, 1)
         
         return self.common_value, self.signals
     
@@ -183,3 +186,33 @@ class MAAlternativeCommonPriceAuctionEnv(Env):
         return self.common_value, self.signals
     
 
+class MAAllPayAuctionEnv(Env):
+    def __init__(self, n_players):
+        self.bid_space = Box(low=np.array([0]), high=np.array([1]), dtype=np.float32) # actions space
+        self.observation_space = Box(low=np.array([0]), high=np.array([1]), dtype=np.float32)
+        self.states_shape = self.observation_space.shape
+        self.N = n_players        
+
+    def reward_n_players(self, values, bids, r):
+        # rewards equal to negative bids list
+        rewards = [-b for b in bids]
+        idx = np.argmax(bids)
+        winner_reward = values[idx] - bids[idx]
+        if winner_reward > 0:
+            rewards[idx] = winner_reward**r
+        else:
+            rewards[idx] = winner_reward        
+        return rewards
+        
+    def step(self, states, actions, r):
+        rewards = self.reward_n_players(states, actions, r)
+
+        # Return step information
+        return rewards
+
+    def reset(self):
+        # Reset state - input new random private value
+
+        # self.values = T.tensor([random.random() for _ in range(self.N)])
+        self.values = [random.random() for _ in range(self.N)]
+        return self.values

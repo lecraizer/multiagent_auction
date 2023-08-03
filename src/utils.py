@@ -53,6 +53,8 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
     states = np.linspace(0, 1, 100)
     if auc_type == 'tariff_discount':
         states = np.linspace(0, max_revenue, 100)
+    elif auc_type == 'common_value':
+        states = np.linspace(vl, vh, 100)
     actions = []
     avg_error = 0
     for state in states:
@@ -66,6 +68,9 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
         elif auc_type == 'common_value':
             Y = ( (2*eps)/(N+1) ) * math.exp( (-N/(2*eps) )*( state-(vl+eps) ) )
             expected_action = state - eps + Y
+        elif auc_type == 'all_pay': # reminder that this expected action works only for N=2
+            expected_action = (state**2)/2
+        
         avg_error += abs(action - expected_action)
         actions.append(action)
     avg_error /= len(states)
@@ -82,7 +87,9 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
     elif auc_type == 'common_value':
         Y = ( (2*eps)/(N+1) ) * np.exp( (-N/(2*eps) )*( states-(vl+eps) ) )
         plt.plot(states, states - eps + Y, color='brown', linewidth=0.5)
-    
+    elif auc_type == 'all_pay':
+        plt.plot(states, (states**2)/2, color='brown', linewidth=0.5)
+
     plt.title(formalize_name(auc_type) + ' Auction for ' + str(N) + ' players')
     plt.text(0.02, 0.94, 'Avg error: %.3f' % avg_error, fontsize=10, color='#696969')
     plt.legend(['Expected bid', 'Agent bid'], loc='lower right')   
@@ -96,6 +103,9 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
 
     if auc_type == 'tariff_discount':
         axes.set_xlim([0, max_revenue])
+    elif auc_type == 'common_value':
+        axes.set_xlim([vl, vh])
+        axes.set_ylim([vl, vh])
 
     try:
         plt.savefig('results/' + auc_type + '/N=' + str(N) + '/' + agent_name + '_' + str(int(n_episodes/1000)) + 'k_' + 'r' + str(r) + '.png')

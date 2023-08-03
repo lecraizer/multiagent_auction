@@ -26,11 +26,13 @@ if auction == 'first_price':
 elif auction == 'second_price':
     multiagent_env = MASecondPriceAuctionEnv(N)
 elif auction == 'common_value':
-    vl, vh, eps = 0, 1, 0.3
+    vl, vh, eps = 0, 3, 0.4
     multiagent_env = MACommonPriceAuctionEnv(N, vl=vl, vh=vh, eps=eps)
 elif auction == 'tariff_discount':
     max_revenue = 5
     multiagent_env = MATariffDiscountEnv(N, max_revenue=max_revenue)
+elif auction == 'all_pay':
+    multiagent_env = MAAllPayAuctionEnv(N)
 
 
 ### --- Creating agents --- ###
@@ -62,9 +64,10 @@ else:
         agents[k].load_models(string)
 
     # Tranfer learning step
-    # auction = 'tariff_discount'
+    # auction = 'all_pay'
     # r = 0.3
     # max_revenue = 2
     # multiagent_env = MATariffDiscountEnv(N, max_revenue=max_revenue)
+    # multiagent_env = MAAllPayAuctionEnv(N)
     # score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction, r=aversion_coef)
     # playsound('beep.mp3') if alert else None # beep when training is done    
