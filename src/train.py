@@ -25,7 +25,7 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, max_re
         
         batch_loss = []
         for idx in range(N):          
-            for new_action in np.linspace(0.001, max_revenue-0.001, 10):
+            for new_action in np.linspace(0.001, max_revenue-0.001, 500):
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(observations, actions, r)
                 agents[idx].remember(observations[idx], actions[idx], rewards[idx])
@@ -70,7 +70,7 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, max_re
     print('\n\nTotal training time: ', str(timedelta(seconds=total_time)).split('.')[0])
 
     
-def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price', vl=0, vh=1, eps=0.1, save_interval=10):
+def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price', r=1, vl=0, vh=1, eps=0.1, save_interval=10):
     '''
     Multiagent training loop function for common value auctions
     '''

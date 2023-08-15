@@ -216,3 +216,34 @@ class MAAllPayAuctionEnv(Env):
         # self.values = T.tensor([random.random() for _ in range(self.N)])
         self.values = [random.random() for _ in range(self.N)]
         return self.values
+    
+
+class MAAssymetricFirstPriceAuctionEnv(Env):
+    def __init__(self, n_players):
+        self.bid_space = Box(low=np.array([0]), high=np.array([1]), dtype=np.float32) # actions space
+        self.observation_space = Box(low=np.array([0]), high=np.array([1]), dtype=np.float32)
+        self.states_shape = self.observation_space.shape
+        self.N = n_players        
+
+    def reward_n_players(self, values, bids, r):
+        rewards = [0]*self.N
+        idx = np.argmax(bids)
+        winner_reward = values[idx] - bids[idx]
+        if winner_reward > 0:
+            rewards[idx] = winner_reward**r[idx]
+        else:
+            rewards[idx] = winner_reward        
+        return rewards
+        
+    def step(self, states, actions, r):
+        rewards = self.reward_n_players(states, actions, r)
+
+        # Return step information
+        return rewards
+
+    def reset(self):
+        # Reset state - input new random private value
+
+        # self.values = T.tensor([random.random() for _ in range(self.N)])
+        self.values = [random.random() for _ in range(self.N)]
+        return self.values
