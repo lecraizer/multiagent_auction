@@ -12,6 +12,7 @@ from utils import *
 from train import *
 from agent import Agent
 from env import *
+from evaluation import *
 from argparser import parse_args
 
 if __name__ == "__main__":
@@ -62,12 +63,15 @@ if __name__ == "__main__":
         for k in range(N):
             string = auction + '_ag' + str(k) + '_r' + str(aversion_coef) + '_' + str(n_episodes) + 'ep'
             agents[k].load_models(string)
+            
 
-        # Tranfer learning step
-        # auction = 'all_pay'
-        # r = 0.3
-        # max_revenue = 2
-        # multiagent_env = MATariffDiscountEnv(N, max_revenue=max_revenue)
-        # multiagent_env = MAAllPayAuctionEnv(N)
-        # score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction, r=aversion_coef)
+        ### --- Tranfer learning step --- ###
+        
+        # multiagent_env = MASecondPriceAuctionEnv(N)
+        # score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction='second_price', r=1)
         # playsound('beep.mp3') if alert else None # beep when training is done    
+
+
+        ### --- Evaluation step --- ###
+        N = 100
+        evaluate(agents, N)
