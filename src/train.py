@@ -128,31 +128,30 @@ def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price', 
 
 
 ###  Single agent training loop
-def trainLoop(agent, env, n_episodes, ponderated_avg, N, BS, k):
+def trainLoop(agent, env, n_episodes, N=2, auction_type='first_price', save_interval=100):
     np.random.seed(0)
     start_time = timeit.default_timer()
 
     score_history = []
-    for i in range(n_episodes):
+    for ep in range(n_episodes):
         obs = env.reset()
-        score = 0
-        print('\nEpisode', i)
-        print('Value: ', obs)
-        act = agent.choose_action(obs)
-        print('Bid:   ', act[0])
-        new_state, reward, info = env.step(act)
-        agent.remember(obs, act, reward, new_state)
+        act = agent.choose_action(obs, ep)
+        reward = env.step(act)
+        agent.remember(obs, act, reward)
         agent.learn()
-        score += reward
-        obs = new_state
-        score_history.append(score)
-        print('Score   %.2f' % score,
-            'trailing ' + str(ponderated_avg) + ' games avg %.3f' % np.mean(score_history[-ponderated_avg:]))
+        # score += reward
+        # obs = new_state
+        # score_history.append(score)
+        # print('Score   %.2f' % score,
+            # 'trailing ' + str(ponderated_avg) + ' games avg %.3f' % np.mean(score_history[-ponderated_avg:]))
         
-        # if i % 25 == 0:
-        #    agent.save_models()
+        if ep % save_interval == 0:
+            print('\nEpisode:', ep)
+            print('Value:  ', obs)
+            print('Bid:    ', act[0])
+            print('Reward: ', reward)
+            manualTesting(agent, N, ep, n_episodes, auc_type=auction_type)
 
     # Total training time
     total_time = timeit.default_timer() - start_time
     print('\n\nTotal training time: ', str(timedelta(seconds=total_time)).split('.')[0])
-    return score_history
