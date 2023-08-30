@@ -6,6 +6,11 @@ results/first_price
 results/second_price
 results/tariff_discount
 results/all_pay
+singleagent_results/common_value
+singleagent_results/all_pay
+singleagent_results/first_price
+singleagent_results/second_price
+singleagent_results/tariff_discount
 stuff/
 .tmp/
 attributes.git
