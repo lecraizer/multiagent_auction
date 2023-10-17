@@ -50,27 +50,38 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
     # reset plot variables
     plt.close('all')
 
+    # # Assymentric first price auction
+    # if agent_name == 'ag1':
+    #     states = np.linspace(0, 1, 100)
+    # else:
+    #     states = np.linspace(0, 2, 100)
+    
     states = np.linspace(0, 1, 100)
     if auc_type == 'tariff_discount':
         states = np.linspace(0, max_revenue, 100)
-    elif auc_type == 'common_value':
-        states = np.linspace(vl, vh, 100)
+    # elif auc_type == 'common_value':
+        # states = np.linspace(vl, vh, 100)
     actions = []
     avg_error = 0
     for state in states:
         action = agent.choose_action(state, episode)[0] # bid
         if auc_type == 'first_price':
             expected_action = state*(N-1)/(N-1+r)
+            # # if assymetric game
+            # if agent_name == 'ag1':
+            #     expected_action = 4./(3*state+0.000000001) * (1-(math.sqrt(1-(3*(state**2)/4.))))
+            # else:
+            #     expected_action = 4./(3*state+0.000000001) * ((math.sqrt(1+(3*(state**2)/4.)))-1)
         elif auc_type == 'second_price':
             expected_action = state
         elif auc_type == 'tariff_discount':
             expected_action = (1-(state/max_revenue))*(N-1)/(N)
         elif auc_type == 'common_value':
-            Y = ( (2*eps)/(N+1) ) * math.exp( (-N/(2*eps) )*( state-(vl+eps) ) )
-            expected_action = state - eps + Y
+            # Y = ( (2*eps)/(N+1) ) * math.exp( (-N/(2*eps) )*( state-(vl+eps) ) )
+            # expected_action = state - eps + Y
+            expected_action = state
         elif auc_type == 'all_pay': # reminder that this expected action works only for N=2
-            expected_action = (state**2)/2
-        
+            expected_action = (state**2)/2.0
         avg_error += abs(action - expected_action)
         actions.append(action)
     avg_error /= len(states)
@@ -80,15 +91,23 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
     plt.scatter(states, actions, color='black', s=0.3)
     if auc_type == 'first_price':
         plt.plot(states, states*(N-1)/(N-1+r), color='brown', linewidth=0.5)
+        
+        # # Assymetric first price auction
+        # if agent_name == 'ag1':
+        #     plt.plot(states, 4./(3*states+0.000000001) * (1-(np.sqrt(1-(3*(states**2)/4.)))), color='brown', linewidth=0.5)
+        # else:
+        #     plt.plot(states, 4./(3*states+0.000000001) * ((np.sqrt(1+(3*(states**2)/4.)))-1), color='brown', linewidth=0.5)
+    
     elif auc_type == 'second_price':
         plt.plot(states, states, color='brown', linewidth=0.5)
     elif auc_type == 'tariff_discount':
         plt.plot(states, (1-(states/max_revenue))*(N-1)/(N), color='brown', linewidth=0.5)
     elif auc_type == 'common_value':
-        Y = ( (2*eps)/(N+1) ) * np.exp( (-N/(2*eps) )*( states-(vl+eps) ) )
-        plt.plot(states, states - eps + Y, color='brown', linewidth=0.5)
+        plt.plot(states, states, color='brown', linewidth=0.5)
+        # Y = ( (2*eps)/(N+1) ) * np.exp( (-N/(2*eps) )*( states-(vl+eps) ) )
+        # plt.plot(states, states - eps + Y, color='brown', linewidth=0.5)
     elif auc_type == 'all_pay':
-        plt.plot(states, (states**2)/2, color='brown', linewidth=0.5)
+        plt.plot(states, (states**2)/2.0, color='brown', linewidth=0.5)
 
     plt.title(formalize_name(auc_type) + ' Auction for ' + str(N) + ' players')
     plt.text(0.02, 0.94, 'Avg error: %.3f' % avg_error, fontsize=10, color='#696969')
@@ -101,11 +120,21 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
     axes.set_xlim([0, 1])
     axes.set_ylim([0, 1])
 
+    # # Assymentric first price auction
+    # if agent_name == 'ag1':
+    #     axes.set_xlim([0, 1])
+    #     axes.set_ylim([0, 1])
+    # elif agent_name == 'ag2':
+    #     axes.set_xlim([0, 2])
+    #     axes.set_ylim([0, 2])
+
     if auc_type == 'tariff_discount':
         axes.set_xlim([0, max_revenue])
     elif auc_type == 'common_value':
-        axes.set_xlim([vl, vh])
-        axes.set_ylim([vl, vh])
+        # axes.set_xlim([vl, vh])
+        # axes.set_ylim([vl, vh])
+        # axes.set_xlim([0, 2])
+        axes.set_ylim([0, 2])
 
     try:
         plt.savefig('results/' + auc_type + '/N=' + str(N) + '/' + agent_name + '_' + str(int(n_episodes/1000)) + 'k_' + 'r' + str(r) + '.png')

@@ -162,10 +162,11 @@ class MAAlternativeCommonPriceAuctionEnv(Env):
         else:
             return random.choice(max_indices)
 
-    def reward_n_players(self, common_value, bids):
+    def reward_n_players(self, value, bids):
         rewards = [0]*self.N
         idx = self.argmax_with_random_tie(bids)
-        rewards[idx] = common_value - bids[idx]
+        if bids[idx] > 0.0:
+            rewards[idx] = value - bids[idx]
         return rewards
         
     def step(self, state, actions):
@@ -175,15 +176,46 @@ class MAAlternativeCommonPriceAuctionEnv(Env):
         return rewards
 
     def reset(self):
-        # Reset state - input new random common value
-        
-        # list of signals for each agent in a uniform distribution
-        # self.signals = [random.random() for _ in range(self.N)]
-        self.signals = [random.random() for _ in range(self.N)]
+        signals = [random.random() for _ in range(self.N)]
 
         # common value is the sum of the signals
-        self.common_value = sum(self.signals)/self.N
-        return self.common_value, self.signals
+        common_value = sum(signals)
+        return common_value, signals
+    
+
+class MASecondCommonPriceAuctionEnv(Env):
+    def __init__(self, n_players):
+        self.bid_space = Box(low=np.array([0]), high=np.array([1]), dtype=np.float32) # actions space
+        self.observation_space = Box(low=np.array([0]), high=np.array([1]), dtype=np.float32)
+        self.states_shape = self.observation_space.shape
+        self.N = n_players
+    
+    def argmax_with_random_tie(self, A):
+        max_indices = np.where(A == np.max(A))[0]
+        if len(max_indices) == 1:
+            return max_indices[0]
+        else:
+            return random.choice(max_indices)
+
+    def reward_n_players(self, value, bids):
+        rewards = [0]*self.N
+        end_list = np.argsort(bids)[-2:]
+        second_max_idx, max_idx = end_list[0], end_list[1]
+        rewards[max_idx] = value - bids[second_max_idx]
+        return rewards
+        
+    def step(self, state, actions):
+        rewards = self.reward_n_players(state, actions)
+
+        # Return step information
+        return rewards
+
+    def reset(self):
+        signals = [random.random() for _ in range(self.N)]
+
+        # common value is the sum of the signals
+        common_value = sum(signals)
+        return common_value, signals
     
 
 class MAAllPayAuctionEnv(Env):
@@ -218,6 +250,38 @@ class MAAllPayAuctionEnv(Env):
         return self.values
     
 
+# class MAAssymetricFirstPriceAuctionEnv(Env):
+#     def __init__(self, n_players):
+#         self.bid_space = Box(low=np.array([0]), high=np.array([1]), dtype=np.float32) # actions space
+#         self.observation_space = Box(low=np.array([0]), high=np.array([1]), dtype=np.float32)
+#         self.states_shape = self.observation_space.shape
+#         self.N = n_players        
+
+#     def reward_n_players(self, values, bids, r):
+#         rewards = [0]*self.N
+#         idx = np.argmax(bids)
+#         winner_reward = values[idx] - bids[idx]
+#         if winner_reward > 0:
+#             rewards[idx] = winner_reward**r[idx]
+#         else:
+#             rewards[idx] = winner_reward        
+#         return rewards
+        
+#     def step(self, states, actions, r):
+#         rewards = self.reward_n_players(states, actions, r)
+
+#         # Return step information
+#         return rewards
+
+#     def reset(self):
+#         # Reset state - input new random private value
+
+#         # self.values = T.tensor([random.random() for _ in range(self.N)])
+#         self.values = [random.random() for _ in range(self.N)]
+#         return self.values
+    
+
+
 class MAAssymetricFirstPriceAuctionEnv(Env):
     def __init__(self, n_players):
         self.bid_space = Box(low=np.array([0]), high=np.array([1]), dtype=np.float32) # actions space
@@ -230,7 +294,7 @@ class MAAssymetricFirstPriceAuctionEnv(Env):
         idx = np.argmax(bids)
         winner_reward = values[idx] - bids[idx]
         if winner_reward > 0:
-            rewards[idx] = winner_reward**r[idx]
+            rewards[idx] = winner_reward**r
         else:
             rewards[idx] = winner_reward        
         return rewards
@@ -243,7 +307,5 @@ class MAAssymetricFirstPriceAuctionEnv(Env):
 
     def reset(self):
         # Reset state - input new random private value
-
-        # self.values = T.tensor([random.random() for _ in range(self.N)])
-        self.values = [random.random() for _ in range(self.N)]
+        self.values = [random.random(), random.random()*2]
         return self.values

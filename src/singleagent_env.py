@@ -81,8 +81,10 @@ class AllPayAuctionEnv(Env):
         return reward
     
     def step(self, action):
-        # others_bids = [random.random() for _ in range(self.N-1)]
-        others_bids = [(self.value**2.0)/2.0 for _ in range(self.N-1)]
+        others_bids = [random.random() for _ in range(self.N-1)]
+        # others_bids = [(self.value**2.0)/2.0 for _ in range(self.N-1)]
+        # others_bids = [0.0 for _ in range(self.N-1)]
+
         bid = action[0]
         reward = self.reward_n_players(bid, others_bids)
         

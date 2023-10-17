@@ -5,7 +5,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-
 class CriticNetwork(nn.Module):
     def __init__(self, beta, input_dims, fc1_dims, fc2_dims, n_actions, name,
                  chkpt_dir='models/critic'):
@@ -48,6 +47,10 @@ class CriticNetwork(nn.Module):
     def forward(self, state, action):
         state_value = self.fc1(state)
         # state_value = self.bn1(state_value)
+        state_value = F.relu(state_value)
+        state_value = self.fc2(state_value)
+
+        # Extra layer
         state_value = F.relu(state_value)
         state_value = self.fc2(state_value)
         
@@ -113,8 +116,13 @@ class ActorNetwork(nn.Module):
         x = self.fc2(x)
         # x = self.bn2(x)
 
-        # x = T.sigmoid(self.mu(x))*3
+        # Extra layer
+        x = F.relu(x)
+        x = self.fc2(x)
+
+        # x = T.sigmoid(self.mu(x))*2
         x = T.sigmoid(self.mu(x))
+        # x = T.relu(self.mu(x))
         return x
 
     def save_checkpoint(self, name):

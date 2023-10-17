@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from buffer import ReplayBuffer
 from networks import ActorNetwork, CriticNetwork
 
+# from torchviz import make_dot
 
 class Agent(object):
     def __init__(self, alpha, beta, input_dims, tau, env, gamma=0.99,
@@ -19,7 +20,11 @@ class Agent(object):
         self.actor = ActorNetwork(alpha, input_dims, layer1_size,
                                   layer2_size, n_actions=n_actions,
                                   name='actor')
-        
+                    
+        # dot = make_dot(self.actor(T.randn(400, 1)), params=dict(self.actor.named_parameters()))
+        # dot.format = 'png'
+        # dot.render('actor', format='png')
+
         self.critic = CriticNetwork(beta, input_dims, layer1_size,
                                     layer2_size, n_actions=n_actions,
                                     name='critic')
@@ -37,13 +42,24 @@ class Agent(object):
         self.actor.eval()
         observation = T.tensor([observation], dtype=T.float).to(self.actor.device)
         mu = self.actor.forward(observation).to(self.actor.device)
+        
         if evaluation:
             mu_prime = mu
         else:
-            noise = T.tensor(np.random.normal(0.2, 0.2), dtype=T.float).to(self.actor.device)
-            mu_prime = mu + (noise*(1-(episode/self.total_episodes)))
-            mu_prime = mu_prime.clamp(0, 100)
+            # N = 2
+            # noise = T.tensor(np.random.normal(0, 0.2), dtype=T.float).to(self.actor.device)
+            # mu_prime = mu + (noise*(1-(episode/self.total_episodes)))
+            # mu_prime = mu_prime.clamp(0, 2)
+
+            # # agent has chance = exploration_rate to play randomly 
+            # exploration_rate = 1-(episode/self.total_episodes)
+            # if random.random() < exploration_rate:
+            #     mu_prime = T.tensor([np.random.uniform(0, N)], dtype=T.float).to(self.actor.device)
+            # else:
+            #     mu_prime = mu
         
+            mu_prime = mu.clamp(0, 1)
+
         self.actor.train()
         return mu_prime.cpu().detach().numpy()
 
