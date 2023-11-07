@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     ### --- Creating agents --- ###
     agents = [Agent(alpha=0.000025, beta=0.00025, input_dims=[1], tau=0.001, 
-                    env=multiagent_env, batch_size=BS, layer1_size=400, layer2_size=400, 
+                    env=multiagent_env, batch_size=BS, layer1_size=100, layer2_size=100, 
                     n_actions=1, total_eps=n_episodes) for i in range(N)]
 
 
