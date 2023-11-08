@@ -11,7 +11,7 @@ class CriticNetwork(nn.Module):
         super(CriticNetwork, self).__init__()
         self.checkpoint_file = os.path.join(chkpt_dir,name)
 
-        self.fc1 = nn.Linear(*input_dims, fc1_dims)
+        self.fc1 = nn.Linear(input_dims, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.action_value = nn.Linear(n_actions, fc2_dims)
         self.q = nn.Linear(fc2_dims, 1)
@@ -33,12 +33,25 @@ class CriticNetwork(nn.Module):
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
 
-    def forward(self, state, action):
+    def forward(self, state, action, state2, action2):
         state_value = self.fc1(state)
         state_value = F.relu(state_value)
         state_value = self.fc2(state_value)
+
+        # state for agent 2
+        state_value2 = self.fc1(state2)
+        state_value2 = F.relu(state_value2)
+        state_value2 = self.fc2(state_value2)
+
         action_value = F.relu(self.action_value(action))
-        state_action_value = F.relu(T.add(state_value, action_value))
+
+        # action for agent 2
+        action_value2 = F.relu(self.action_value(action2))
+        
+        # sum of state and action values for agents 1 and 2
+        state_action_value = T.add(state_value, action_value)
+        state_action_value = T.add(state_action_value, state_value2)
+        state_action_value = F.relu(T.add(state_action_value, action_value2))
         state_action_value = self.q(state_action_value)
         return state_action_value
 
@@ -57,7 +70,7 @@ class ActorNetwork(nn.Module):
         super(ActorNetwork, self).__init__()
         self.checkpoint_file = os.path.join(chkpt_dir,name)
 
-        self.fc1 = nn.Linear(*input_dims, fc1_dims)        
+        self.fc1 = nn.Linear(input_dims, fc1_dims)        
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.mu = nn.Linear(fc2_dims, n_actions)
 

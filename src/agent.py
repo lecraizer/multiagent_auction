@@ -1,29 +1,18 @@
-import random
-import numpy as np
 import torch as T
-import torch.nn.functional as F
-from buffer import ReplayBuffer
 from networks import ActorNetwork, CriticNetwork
 
-# from torchviz import make_dot
-
 class Agent(object):
-    def __init__(self, alpha, beta, input_dims, tau, env, gamma=0.99,
-                 n_actions=2, max_size=1000000, layer1_size=400,
-                 layer2_size=300, batch_size=64, total_eps=100000):
+    def __init__(self, alpha, beta, input_dims, tau, gamma=0.99,
+                 n_actions=1, layer1_size=400, layer2_size=300, 
+                 batch_size=64, total_eps=100000):
         self.gamma = gamma
         self.tau = tau
-        self.memory = ReplayBuffer(max_size, input_dims, n_actions)
         self.batch_size = batch_size
         self.total_episodes = total_eps
 
         self.actor = ActorNetwork(alpha, input_dims, layer1_size,
                                   layer2_size, n_actions=n_actions,
                                   name='actor')
-                    
-        # dot = make_dot(self.actor(T.randn(400, 1)), params=dict(self.actor.named_parameters()))
-        # dot.format = 'png'
-        # dot.render('actor', format='png')
 
         self.critic = CriticNetwork(beta, input_dims, layer1_size,
                                     layer2_size, n_actions=n_actions,
@@ -37,6 +26,12 @@ class Agent(object):
                                            name='target_critic')
 
         self.update_network_parameters(tau=1)
+    
+        # from torchviz import make_dot 
+        # dot = make_dot(self.actor(T.randn(400, 1)), params=dict(self.actor.named_parameters()))
+        # dot.format = 'png'
+        # dot.render('actor', format='png')
+
 
     def choose_action(self, observation, episode, evaluation=False):
         self.actor.eval()
@@ -46,7 +41,6 @@ class Agent(object):
         if evaluation:
             mu_prime = mu
         else:
-            # N = 2
             # noise = T.tensor(np.random.normal(0, 0.2), dtype=T.float).to(self.actor.device)
             # mu_prime = mu + (noise*(1-(episode/self.total_episodes)))
             # mu_prime = mu_prime.clamp(0, 2)
@@ -62,53 +56,6 @@ class Agent(object):
 
         self.actor.train()
         return mu_prime.cpu().detach().numpy()
-
-    def remember(self, state, action, reward):
-        self.memory.store_transition(state, action, reward)
-
-    def learn(self):
-        if self.memory.mem_cntr < self.batch_size:
-            return
-        
-        state, action, reward = self.memory.sample_buffer(self.batch_size)
-
-        reward = T.tensor(reward, dtype=T.float).to(self.critic.device)
-        action = T.tensor(action, dtype=T.float).to(self.critic.device)
-        state = T.tensor(state, dtype=T.float).to(self.critic.device)
-
-        self.target_actor.eval()
-        self.target_critic.eval()
-        self.critic.eval()
-        target_actions = self.target_actor.forward(state)
-        critic_value_ = self.target_critic.forward(state, target_actions)
-        critic_value = self.critic.forward(state, action)
-
-        target = []
-        for j in range(self.batch_size):
-            target.append(reward[j] + self.gamma*critic_value_[j])
-        target = T.tensor(target).to(self.critic.device)
-        target = target.view(self.batch_size, 1)
-
-        self.critic.train()
-        self.critic.optimizer.zero_grad()
-        critic_loss = F.mse_loss(target, critic_value)
-        critic_loss.backward()
-        self.critic.optimizer.step()
-
-        self.critic.eval()
-        self.actor.optimizer.zero_grad()
-        mu = self.actor.forward(state)
-        self.actor.train()
-        actor_loss = -self.critic.forward(state, mu)
-
-        actor_loss = T.mean(actor_loss)
-        actor_loss.backward()
-        self.actor.optimizer.step()
-
-        self.update_network_parameters()
-
-        return critic_loss.item()
-        # return critic_loss.item(), actor_loss.item()
 
     def update_network_parameters(self, tau=None):
         if tau is None:

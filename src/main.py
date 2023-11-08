@@ -10,6 +10,8 @@ from env import *
 from evaluation import *
 from argparser import parse_args
 
+from maddpg import MADDPG
+
 if __name__ == "__main__":
 
     ### --- Parsing arguments --- ###
@@ -32,10 +34,13 @@ if __name__ == "__main__":
         multiagent_env = MAAllPayAuctionEnv(N)
 
 
-    ### --- Creating agents --- ###
-    agents = [Agent(alpha=0.000025, beta=0.00025, input_dims=[1], tau=0.001, 
-                    env=multiagent_env, batch_size=BS, layer1_size=100, layer2_size=100, 
-                    n_actions=1, total_eps=n_episodes) for i in range(N)]
+    # ### --- Creating agents --- ###
+    # agents = [Agent(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001, 
+    #                 batch_size=BS, layer1_size=100, layer2_size=100, 
+    #                 n_actions=1, total_eps=n_episodes) for i in range(N)]
+    
+    maddpg = MADDPG(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001,
+                    gamma=0.99, BS=BS, fc1=100, fc2=100, n_actions=1, n_agents=N)
 
 
     ### --- Training step --- ###
@@ -46,16 +51,16 @@ if __name__ == "__main__":
         if auction == 'common_value':
             # score_history = MAtrainLoopCommonValue(agents, multiagent_env, n_episodes, 
             # auction, vl=vl, vh=vh, eps=eps, save_interval=save_interval)
-            score_history = MAtrainLoopAlternativeCommonValue(agents, multiagent_env, 
+            score_history = MAtrainLoopAlternativeCommonValue(maddpg, multiagent_env, 
                                                               n_episodes, auction, 
                                                               save_interval=save_interval)
 
         elif auction == 'tariff_discount':
-            score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction, 
+            score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, auction, 
                                         r=aversion_coef, max_revenue=max_revenue, 
                                         gif=create_gif, save_interval=save_interval)
         else:
-            score_history = MAtrainLoop(agents, multiagent_env, n_episodes, auction, 
+            score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, auction, 
                                         r=aversion_coef, gif=create_gif, save_interval=50)
         playsound('beep.mp3') if alert else None # beep when training is done    
 
@@ -64,12 +69,12 @@ if __name__ == "__main__":
         print('Loading models...') 
         for k in range(N):
             string = auction + '_ag' + str(k) + '_r' + str(aversion_coef) + '_' + str(n_episodes) + 'ep'
-            agents[k].load_models(string)
+            maddpg[k].load_models(string)
             
 
         ### --- Tranfer learning step --- ###
         multiagent_env = MAAlternativeCommonPriceAuctionEnv(N)
-        score_history = MAtrainLoopAlternativeCommonValue(agents, multiagent_env, 
+        score_history = MAtrainLoopAlternativeCommonValue(maddpg, multiagent_env, 
                                                               n_episodes, auction, 
                                                               save_interval=save_interval)
         playsound('beep.mp3') if alert else None # beep when training is done    

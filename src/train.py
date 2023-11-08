@@ -8,12 +8,13 @@ import os
 from utils import *
 
 
-def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, max_revenue=1, gif=False, save_interval=10):
+def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_revenue=1, gif=False, save_interval=10):
     '''
     Multiagent training loop function for general auctions
     '''
     np.random.seed(0)
     start_time = timeit.default_timer()
+    agents = maddpg.agents
     N = len(agents)
     literature_error = []
     loss_history = []
@@ -28,8 +29,9 @@ def MAtrainLoop(agents, env, n_episodes, auction_type='first_price', r=1, max_re
             for new_action in np.linspace(0.001, max_revenue-0.001, 10):
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(observations, actions, r)
-                agents[idx].remember(observations[idx], actions[idx], rewards[idx])
-                loss = agents[idx].learn()
+                
+                maddpg.remember(observations[idx], actions[idx], rewards[idx])
+                loss = maddpg.learn()
                 if loss is not None:
                     batch_loss.append(loss)
 
@@ -98,6 +100,7 @@ def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price',
                 loss = agents[idx].learn()
                 if loss is not None:
                     batch_loss.append(loss)
+        
         
         decrease_factor = 0.999
         if ep % save_interval == 0:
