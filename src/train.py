@@ -30,7 +30,7 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(observations, actions, r)
                 
-                maddpg.remember(observations[idx], actions[idx], rewards[idx])
+                maddpg.remember(observations[idx], actions[idx], rewards[idx], observations[(idx+1)%2], actions[(idx+1)%2])
                 loss = maddpg.learn()
                 if loss is not None:
                     batch_loss.append(loss)
@@ -73,13 +73,15 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
     print('\n\nTotal training time: ', str(timedelta(seconds=total_time)).split('.')[0])
 
     
-def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price', 
+def MAtrainLoopCommonValue(maddpg, env, n_episodes, auction_type='first_price', 
                            r=1, vl=0, vh=2, eps=0.1, save_interval=10):
     '''
     Multiagent training loop function for common value auctions
     '''
     np.random.seed(0)
     start_time = timeit.default_timer()
+
+    agents = maddpg.agents
     N = len(agents)
 
     literature_error = []
@@ -96,7 +98,7 @@ def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price',
             # or try n=100 random actions
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(common_value, actions)
-                agents[idx].remember(observations[idx], actions[idx], rewards[idx])
+                maddpg.remember(observations[idx], actions[idx], rewards[idx], observations[(idx+1)%2], actions[(idx+1)%2])
                 loss = agents[idx].learn()
                 if loss is not None:
                     batch_loss.append(loss)
@@ -132,7 +134,7 @@ def MAtrainLoopCommonValue(agents, env, n_episodes, auction_type='first_price',
 
 
 
-def MAtrainLoopAlternativeCommonValue(agents, env, n_episodes, 
+def MAtrainLoopAlternativeCommonValue(maddpg, env, n_episodes, 
                                       auction_type='first_price', 
                                       r=1, save_interval=10):
     '''
@@ -140,6 +142,8 @@ def MAtrainLoopAlternativeCommonValue(agents, env, n_episodes,
     '''
     np.random.seed(0)
     start_time = timeit.default_timer()
+    
+    agents = maddpg.agents
     N = len(agents)
 
     literature_error = []
@@ -160,7 +164,7 @@ def MAtrainLoopAlternativeCommonValue(agents, env, n_episodes,
             for new_action in np.linspace(0, N, 100): # test n different actions
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(common_value, actions)
-                agents[idx].remember(observations[idx], actions[idx], rewards[idx])
+                maddpg.remember(observations[idx], actions[idx], rewards[idx], observations[(idx+1)%2], actions[(idx+1)%2])
                 loss = agents[idx].learn()
                 if loss is not None:
                     batch_loss.append(loss)

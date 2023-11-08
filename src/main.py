@@ -28,7 +28,7 @@ if __name__ == "__main__":
         # multiagent_env = MACommonPriceAuctionEnv(N, vl=vl, vh=vh, eps=eps)
         multiagent_env = MAAlternativeCommonPriceAuctionEnv(N)
     elif auction == 'tariff_discount':
-        max_revenue = 5
+        max_revenue = 1
         multiagent_env = MATariffDiscountEnv(N, max_revenue=max_revenue)
     elif auction == 'all_pay':
         multiagent_env = MAAllPayAuctionEnv(N)
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         elif auction == 'tariff_discount':
             score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, auction, 
                                         r=aversion_coef, max_revenue=max_revenue, 
-                                        gif=create_gif, save_interval=save_interval)
+                                        gif=create_gif, save_interval=50)
         else:
             score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, auction, 
                                         r=aversion_coef, gif=create_gif, save_interval=50)
