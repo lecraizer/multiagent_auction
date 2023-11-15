@@ -11,21 +11,49 @@ class CriticNetwork(nn.Module):
         super(CriticNetwork, self).__init__()
         self.checkpoint_file = os.path.join(chkpt_dir,name)
 
-        n_agents = 2
-        self.fc1 = nn.Linear(input_dims+n_agents*n_actions+1, fc1_dims)
+        self.fc1 = nn.Linear(input_dims, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
+        self.action_value = nn.Linear(n_actions, fc2_dims)
         self.q = nn.Linear(fc2_dims, 1)
+
+
+        f1 = 1./np.sqrt(self.fc1.weight.data.size()[0])
+        T.nn.init.uniform_(self.fc1.weight.data, -f1, f1)
+        T.nn.init.uniform_(self.fc1.bias.data, -f1, f1)
+
+        f2 = 1./np.sqrt(self.fc2.weight.data.size()[0])
+        T.nn.init.uniform_(self.fc2.weight.data, -f2, f2)
+        T.nn.init.uniform_(self.fc2.bias.data, -f2, f2)
+
+        f3 = 0.003
+        T.nn.init.uniform_(self.q.weight.data, -f3, f3)
+        T.nn.init.uniform_(self.q.bias.data, -f3, f3)
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
 
     def forward(self, state, action, state2, action2):
-        conc = T.cat([state, action, state2, action2], dim=1)
-        x = F.relu(self.fc1(conc))
-        x = F.relu(self.fc2(x))
-        q = self.q(x)
-        return q
+        state_value = self.fc1(state)
+        state_value = F.relu(state_value)
+        state_value = self.fc2(state_value)
+
+        # state for agent 2
+        state_value2 = self.fc1(state2)
+        state_value2 = F.relu(state_value2)
+        state_value2 = self.fc2(state_value2)
+
+        action_value = F.relu(self.action_value(action))
+
+        # action for agent 2
+        action_value2 = F.relu(self.action_value(action2))
+        
+        # sum of state and action values for agents 1 and 2
+        state_action_value = T.add(state_value, action_value)
+        state_action_value = T.add(state_action_value, state_value2)
+        state_action_value = F.relu(T.add(state_action_value, action_value2))
+        state_action_value = self.q(state_action_value)
+        return state_action_value
 
     def save_checkpoint(self, name):
         # print('... Saving critic model for ' + name + ' ...')

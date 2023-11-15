@@ -24,8 +24,6 @@ if __name__ == "__main__":
     elif auction == 'second_price':
         multiagent_env = MASecondPriceAuctionEnv(N)
     elif auction == 'common_value':
-        # vl, vh, eps = 1, 4, 0.3
-        # multiagent_env = MACommonPriceAuctionEnv(N, vl=vl, vh=vh, eps=eps)
         multiagent_env = MAAlternativeCommonPriceAuctionEnv(N)
     elif auction == 'tariff_discount':
         max_revenue = 1
@@ -34,11 +32,7 @@ if __name__ == "__main__":
         multiagent_env = MAAllPayAuctionEnv(N)
 
 
-    # ### --- Creating agents --- ###
-    # agents = [Agent(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001, 
-    #                 batch_size=BS, layer1_size=100, layer2_size=100, 
-    #                 n_actions=1, total_eps=n_episodes) for i in range(N)]
-    
+    ### --- Creating agents --- ###    
     maddpg = MADDPG(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001,
                     gamma=0.99, BS=BS, fc1=100, fc2=100, n_actions=1, n_agents=N)
 
@@ -49,11 +43,9 @@ if __name__ == "__main__":
     if not trained: # Train models if trained==False
         print('Training models...')
         if auction == 'common_value':
-            # score_history = MAtrainLoopCommonValue(agents, multiagent_env, n_episodes, 
-            # auction, vl=vl, vh=vh, eps=eps, save_interval=save_interval)
             score_history = MAtrainLoopAlternativeCommonValue(maddpg, multiagent_env, 
                                                               n_episodes, auction, 
-                                                              save_interval=save_interval)
+                                                              save_interval=50)
 
         elif auction == 'tariff_discount':
             score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, auction, 

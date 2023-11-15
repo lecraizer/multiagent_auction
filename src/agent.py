@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import torch as T
 from networks import ActorNetwork, CriticNetwork
@@ -44,16 +45,18 @@ class Agent(object):
         else:
             noise = T.tensor(np.random.normal(0, 0.2), dtype=T.float).to(self.actor.device)
             mu_prime = mu + (noise*(1-(episode/self.total_episodes)))
-            # mu_prime = mu_prime.clamp(0, 2)
+            mu_prime = mu_prime.clamp(0, 1)
 
             # # agent has chance = exploration_rate to play randomly 
             # exploration_rate = 1-(episode/self.total_episodes)
             # if random.random() < exploration_rate:
-            #     mu_prime = T.tensor([np.random.uniform(0, N)], dtype=T.float).to(self.actor.device)
+            #     mu_prime = T.tensor([np.random.uniform(0, 1)], dtype=T.float).to(self.actor.device)
             # else:
             #     mu_prime = mu
+
+            # mu_prime = mu_prime.clamp(0, 1)
         
-            mu_prime = mu.clamp(0, 1)
+            # mu_prime = mu.clamp(0, 1)
 
         self.actor.train()
         return mu_prime.cpu().detach().numpy()

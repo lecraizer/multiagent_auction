@@ -29,6 +29,7 @@ class MADDPG:
         for agent_idx, agent in enumerate(self.agents):
             # For each agent
             device = self.agents[agent_idx].critic.device
+            
             state, action, reward, state2, action2 = self.memory.sample_buffer(self.batch_size)
             reward = T.tensor(reward, dtype=T.float).to(device)
             action = T.tensor(action, dtype=T.float).to(device)
@@ -43,10 +44,9 @@ class MADDPG:
             target_actions = agent.target_actor.forward(state)
             target_actions2 = self.agents[(agent_idx+1)%2].target_actor.forward(state2)
 
-
             # Calculate critic value and target critic value
-            critic_value_ = agent.target_critic.forward(state, target_actions, state, target_actions)
-            critic_value = agent.critic.forward(state, action, state, action)
+            critic_value_ = agent.target_critic.forward(state, target_actions, state2, target_actions2)
+            critic_value = agent.critic.forward(state, action, state2, action2)
 
             # Calculate target q value
             target = []
@@ -67,7 +67,7 @@ class MADDPG:
             mu2 = self.agents[(agent_idx+1)%2].actor.forward(state2)
             
             agent.actor.train()
-            actor_loss = -agent.critic.forward(state, mu, state, mu)
+            actor_loss = -agent.critic.forward(state, mu, state2, mu2)
 
             actor_loss = T.mean(actor_loss)
             actor_loss.backward()

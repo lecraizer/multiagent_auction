@@ -64,7 +64,7 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
     actions = []
     avg_error = 0
     for state in states:
-        action = agent.choose_action(state, episode)[0] # bid
+        action = agent.choose_action(state, episode, evaluation=1)[0] # bid
         if auc_type == 'first_price':
             expected_action = state*(N-1)/(N-1+r)
             # # if assymetric game
