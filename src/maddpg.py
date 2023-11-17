@@ -6,16 +6,17 @@ import torch.nn.functional as F
 class MADDPG:
     def __init__(self, alpha=0.000025, beta=0.00025, input_dims=1, 
                  tau=0.001, gamma=0.99, BS=64, fc1=64, fc2=64, 
-                 n_actions=1, n_agents=2):
+                 n_actions=1, n_agents=2, total_eps=100000):
         self.agents = []
-        for agent_idx in range(n_agents):
+        for i in range(n_agents):
             self.agents.append(Agent(alpha=alpha, beta=beta, input_dims=input_dims, 
                                      tau=tau, batch_size=BS, layer1_size=fc1, 
-                                     layer2_size=fc2, n_actions=n_actions))
+                                     layer2_size=fc2, n_actions=n_actions, total_eps=total_eps))
             
         self.batch_size = BS
         self.gamma = gamma
-        self.memory = ReplayBuffer(1000000, input_dims, n_actions)
+        self.max_size = 1000000
+        self.memory = ReplayBuffer(self.max_size, input_dims, n_actions)
 
 
     def remember(self, state, action, reward, state2, action2):

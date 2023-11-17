@@ -15,7 +15,8 @@ from maddpg import MADDPG
 if __name__ == "__main__":
 
     ### --- Parsing arguments --- ###
-    auction, BS, trained, n_episodes, create_gif, N, ponderated_avg, aversion_coef, save_plot, alert, z = parse_args() # get parameters
+    auction, BS, trained, n_episodes, create_gif, N, \
+    ponderated_avg, aversion_coef, save_plot, alert, z = parse_args() # get parameters
 
     ### --- Creating environment --- ###
     if auction == 'first_price':
@@ -34,7 +35,8 @@ if __name__ == "__main__":
 
     ### --- Creating agents --- ###    
     maddpg = MADDPG(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001,
-                    gamma=0.99, BS=BS, fc1=100, fc2=100, n_actions=1, n_agents=N)
+                    gamma=0.99, BS=BS, fc1=100, fc2=100, n_actions=1, 
+                    n_agents=N, total_eps=n_episodes)
 
 
     ### --- Training step --- ###
@@ -65,10 +67,11 @@ if __name__ == "__main__":
             
 
         ### --- Tranfer learning step --- ###
-        multiagent_env = MAAlternativeCommonPriceAuctionEnv(N)
+        # multiagent_env = MAAlternativeCommonPriceAuctionEnv(N)
         score_history = MAtrainLoopAlternativeCommonValue(maddpg, multiagent_env, 
                                                               n_episodes, auction, 
                                                               save_interval=save_interval)
+        
         playsound('beep.mp3') if alert else None # beep when training is done    
 
 
