@@ -20,17 +20,17 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
     loss_history = []
     for ep in range(n_episodes):
         observations = env.reset()
-
         original_actions = [agents[i].choose_action(observations[i], ep)[0] for i in range(N)]
         original_rewards = env.step(observations, original_actions, r)
-        
         batch_loss = []
-        for idx in range(N):          
+        for idx in range(N):
+            others_observations = observations[:idx] + observations[idx+1:]
+            others_actions = original_actions[:idx] + original_actions[idx+1:]
             for new_action in np.linspace(0.001, max_revenue-0.001, 10):
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(observations, actions, r)
-                
-                maddpg.remember(observations[idx], actions[idx], rewards[idx], observations[(idx+1)%2], actions[(idx+1)%2])
+                # maddpg.remember(observations[idx], actions[idx], rewards[idx], observations[(idx+1)%2], actions[(idx+1)%2])
+                maddpg.remember(observations[idx], actions[idx], rewards[idx], others_observations, others_actions)
                 loss = maddpg.learn()
                 if loss is not None:
                     batch_loss.append(loss)
@@ -88,17 +88,18 @@ def MAtrainLoopCommonValue(maddpg, env, n_episodes, auction_type='first_price',
     loss_history = []
     for ep in range(n_episodes):
         common_value, observations = env.reset()
-
         original_actions = [agents[i].choose_action(observations[i], ep)[0] for i in range(N)]
         original_rewards = env.step(common_value, original_actions)
-
         batch_loss = []
         for idx in range(N):
+            others_observations = observations[:idx] + observations[idx+1:]
+            others_actions = original_actions[:idx] + original_actions[idx+1:]
             for new_action in np.linspace(vl+0.001, vh-0.001, 10): # test n different actions
             # or try n=100 random actions
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(common_value, actions)
-                maddpg.remember(observations[idx], actions[idx], rewards[idx], observations[(idx+1)%2], actions[(idx+1)%2])
+                # maddpg.remember(observations[idx], actions[idx], rewards[idx], observations[(idx+1)%2], actions[(idx+1)%2])
+                maddpg.remember(observations[idx], actions[idx], rewards[idx], others_observations, others_actions)
                 loss = maddpg.learn()
                 if loss is not None:
                     batch_loss.append(loss)

@@ -6,13 +6,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 class CriticNetwork(nn.Module):
-    def __init__(self, beta, input_dims, fc1_dims, fc2_dims, n_actions, name,
-                 chkpt_dir='models/critic'):
+    def __init__(self, beta, input_dims, fc1_dims, fc2_dims, n_actions, 
+                 name, n_agents=2, chkpt_dir='models/critic'):
         super(CriticNetwork, self).__init__()
         self.checkpoint_file = os.path.join(chkpt_dir,name)
-
-        n_agents = 2
-        self.fc1 = nn.Linear(input_dims+n_agents*n_actions+1, fc1_dims)
+        sumation = n_agents*(input_dims+n_actions)
+        self.fc1 = nn.Linear(sumation, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.q = nn.Linear(fc2_dims, 1)
 
@@ -20,8 +19,8 @@ class CriticNetwork(nn.Module):
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
 
-    def forward(self, state, action, state2, action2):
-        conc = T.cat([state, action, state2, action2], dim=1)
+    def forward(self, state, action, others_states, others_actions):
+        conc = T.cat([state, action, others_states, others_actions], dim=1)
         x = F.relu(self.fc1(conc))
         x = F.relu(self.fc2(x))
         q = self.q(x)
@@ -37,12 +36,13 @@ class CriticNetwork(nn.Module):
 
 
 class ActorNetwork(nn.Module):
-    def __init__(self, alpha, input_dims, fc1_dims, fc2_dims, n_actions, name,
-                 chkpt_dir='models/actor'):
+    def __init__(self, alpha, input_dims, fc1_dims, fc2_dims, n_actions, 
+                 name, n_agents=2, chkpt_dir='models/actor'):
         super(ActorNetwork, self).__init__()
         self.checkpoint_file = os.path.join(chkpt_dir,name)
 
-        self.fc1 = nn.Linear(input_dims, fc1_dims)        
+        self.fc1 = nn.Linear(input_dims, fc1_dims)
+        self.fc1_2 = nn.Linear(n_agents*input_dims, fc1_dims)        
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.mu = nn.Linear(fc2_dims, n_actions)
 
@@ -63,6 +63,10 @@ class ActorNetwork(nn.Module):
         self.to(self.device)
 
     def forward(self, state):
+        # if len(state.shape) == 2: # if batch is computed
+        #     if state.shape[1] == 2: # if state is a tensor of shape (batch_size, 2)
+        #         state = state[:, 0].unsqueeze(1) # take only the first element of the state
+        
         x = self.fc1(state)
         x = F.relu(x)
         x = self.fc2(x)

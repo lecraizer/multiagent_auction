@@ -8,15 +8,17 @@ class MADDPG:
                  tau=0.001, gamma=0.99, BS=64, fc1=64, fc2=64, 
                  n_actions=1, n_agents=2, total_eps=100000):
         self.agents = []
+        self.num_agents = n_agents
         for i in range(n_agents):
             self.agents.append(Agent(alpha=alpha, beta=beta, input_dims=input_dims, 
                                      tau=tau, batch_size=BS, layer1_size=fc1, 
-                                     layer2_size=fc2, n_actions=n_actions, total_eps=total_eps))
+                                     layer2_size=fc2, n_agents=self.num_agents,
+                                     n_actions=n_actions, total_eps=total_eps))
             
         self.batch_size = BS
         self.gamma = gamma
         self.max_size = 1000000
-        self.memory = ReplayBuffer(self.max_size, input_dims, n_actions)
+        self.memory = ReplayBuffer(self.max_size, input_dims, n_actions, self.num_agents)
 
 
     def remember(self, state, action, reward, state2, action2):
@@ -36,18 +38,33 @@ class MADDPG:
             action = T.tensor(action, dtype=T.float).to(device)
             state = T.tensor(state, dtype=T.float).to(device)
 
-            action2 = T.tensor(action2, dtype=T.float).to(device)
-            state2 = T.tensor(state2, dtype=T.float).to(device)
+            others_actions = T.tensor(action2, dtype=T.float).to(device)
+            others_states = T.tensor(state2, dtype=T.float).to(device)
+
+            # placeholder lines
+            # others_states = state2.repeat(1, self.num_agents-1)
+            # others_actions = action2.repeat(1, self.num_agents-1)
 
             agent.target_actor.eval()
             agent.target_critic.eval()
             agent.critic.eval()
-            target_actions = agent.target_actor.forward(state)
-            target_actions2 = self.agents[(agent_idx+1)%2].target_actor.forward(state2)
+
+            target_actions = agent.target_actor.forward(state)           
+            
+            num_columns = others_states.shape[1] # get the number of columns in others_states
+            target_actions_list = [] # initialize an empty list to store the results
+            for i in range(num_columns): # loop through each column and apply target_actor.forward()
+                other_state_column = others_states[:, i].reshape(-1, 1)
+                target_actions_list.append(self.agents[(agent_idx+1)%2].target_actor.forward(other_state_column))
+            others_target_actions = T.cat(target_actions_list, dim=1) # concatenate the results along the second dimension
+            
+            # target_actions2 = T.sigmoid(target_actions2) # apply sigmoid to the concatenated tensor
+            # target_actions2 = self.agents[(agent_idx+1)%2].target_actor.forward(others_states)
+            # others_target_actions = target_actions2.repeat(1, self.num_agents-1)
 
             # Calculate critic value and target critic value
-            critic_value_ = agent.target_critic.forward(state, target_actions, state2, target_actions2)
-            critic_value = agent.critic.forward(state, action, state2, action2)
+            critic_value_ = agent.target_critic.forward(state, target_actions, others_states, others_target_actions)
+            critic_value = agent.critic.forward(state, action, others_states, others_actions)
 
             # Calculate target q value
             target = []
@@ -65,10 +82,19 @@ class MADDPG:
             agent.critic.eval()
             agent.actor.optimizer.zero_grad()
             mu = agent.actor.forward(state)
-            mu2 = self.agents[(agent_idx+1)%2].actor.forward(state2)
+
+
+            # mu2 = self.agents[(agent_idx+1)%2].actor.forward(others_states)
+            # others_mus = mu2.repeat(1, self.num_agents-1)
+
+            others_mus = [] # initialize an empty list to store the results
+            for i in range(num_columns): # loop through each column and apply target_actor.forward()
+                other_mu = others_states[:, i].reshape(-1, 1)
+                others_mus.append(self.agents[(agent_idx+1)%2].target_actor.forward(other_mu))
+            others_mus = T.cat(others_mus, dim=1)
             
             agent.actor.train()
-            actor_loss = -agent.critic.forward(state, mu, state2, mu2)
+            actor_loss = -agent.critic.forward(state, mu, others_states, others_mus)
 
             actor_loss = T.mean(actor_loss)
             actor_loss.backward()
