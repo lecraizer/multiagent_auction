@@ -40,37 +40,23 @@ class ActorNetwork(nn.Module):
                  name, n_agents=2, chkpt_dir='models/actor'):
         super(ActorNetwork, self).__init__()
         self.checkpoint_file = os.path.join(chkpt_dir,name)
-
+        self.n_agents = n_agents
         self.fc1 = nn.Linear(input_dims, fc1_dims)
-        self.fc1_2 = nn.Linear(n_agents*input_dims, fc1_dims)        
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.mu = nn.Linear(fc2_dims, n_actions)
-
-        f1 = 1./np.sqrt(self.fc1.weight.data.size()[0])
-        T.nn.init.uniform_(self.fc1.weight.data, -f1, f1)
-        T.nn.init.uniform_(self.fc1.bias.data, -f1, f1)
-
-        f2 = 1./np.sqrt(self.fc2.weight.data.size()[0])
-        T.nn.init.uniform_(self.fc2.weight.data, -f2, f2)
-        T.nn.init.uniform_(self.fc2.bias.data, -f2, f2)
-
-        f3 = 0.003
-        T.nn.init.uniform_(self.mu.weight.data, -f3, f3)
-        T.nn.init.uniform_(self.mu.bias.data, -f3, f3)
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
 
     def forward(self, state):
-        # if len(state.shape) == 2: # if batch is computed
-        #     if state.shape[1] == 2: # if state is a tensor of shape (batch_size, 2)
-        #         state = state[:, 0].unsqueeze(1) # take only the first element of the state
-        
+        # auction = 'common_value'
         x = self.fc1(state)
         x = F.relu(x)
         x = self.fc2(x)
         x = T.sigmoid(self.mu(x))
+        # if auction == 'common_value':
+            # x = x * self.n_agents
         return x
 
     def save_checkpoint(self, name):
