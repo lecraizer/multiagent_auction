@@ -8,18 +8,18 @@ class ReplayBuffer(object):
         self.action_memory = np.zeros((self.mem_size, n_actions))
         self.reward_memory = np.zeros(self.mem_size)
         
-        self.state_memory2 = np.zeros((self.mem_size, input_shape*(num_agents-1)))
-        self.action_memory2 = np.zeros((self.mem_size, n_actions*(num_agents-1)))
+        self.others_states = np.zeros((self.mem_size, input_shape*(num_agents-1)))
+        self.others_actions = np.zeros((self.mem_size, n_actions*(num_agents-1)))
 
-    def store_transition(self, state, action, reward, state2, action2):
+    def store_transition(self, state, action, reward, others_states, others_actions):
         index = self.mem_cntr % self.mem_size
         self.state_memory[index] = state
         self.action_memory[index] = action
         self.reward_memory[index] = reward
         self.mem_cntr += 1
 
-        self.state_memory2[index] = state2
-        self.action_memory2[index] = action2
+        self.others_states[index] = others_states
+        self.others_actions[index] = others_actions
 
     def sample_buffer(self, batch_size):
         max_mem = min(self.mem_cntr, self.mem_size)
@@ -28,7 +28,7 @@ class ReplayBuffer(object):
         actions = self.action_memory[batch]
         rewards = self.reward_memory[batch]
 
-        states2 = self.state_memory2[batch]
-        actions2 = self.action_memory2[batch]
+        others_states = self.others_states[batch]
+        others_actions = self.others_actions[batch]
 
-        return states, actions, rewards, states2, actions2
+        return states, actions, rewards, others_states, others_actions
