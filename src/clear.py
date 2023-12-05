@@ -6,7 +6,7 @@ def clear_data():
     '''
     Clear data from previous runs
     '''
-    auction_types = ['first_price', 'second_price', 'common_value', 'tariff_discount', 'all_pay']
+    auction_types = ['first_price', 'second_price', 'common_value', 'tariff_discount', 'all_pay', 'core_selecting']
     for auc_type in auction_types:
         os.system('rm -rf results/' + auc_type + '/*')
         os.system('rm -rf models/actor/' + '*')
