@@ -29,7 +29,6 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
             for new_action in np.linspace(0.001, max_revenue-0.001, 10):
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(observations, actions, r)
-                # maddpg.remember(observations[idx], actions[idx], rewards[idx], observations[(idx+1)%2], actions[(idx+1)%2])
                 maddpg.remember(observations[idx], actions[idx], rewards[idx], others_observations, others_actions)
                 loss = maddpg.learn()
                 if loss is not None:
@@ -98,7 +97,6 @@ def MAtrainLoopCommonValue(maddpg, env, n_episodes, auction_type='first_price',
             # or try n=100 random actions
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(common_value, actions)
-                # maddpg.remember(observations[idx], actions[idx], rewards[idx], observations[(idx+1)%2], actions[(idx+1)%2])
                 maddpg.remember(observations[idx], actions[idx], rewards[idx], others_observations, others_actions)
                 loss = maddpg.learn()
                 if loss is not None:

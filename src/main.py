@@ -31,6 +31,9 @@ if __name__ == "__main__":
         multiagent_env = MATariffDiscountEnv(N, max_revenue=max_revenue)
     elif auction == 'all_pay':
         multiagent_env = MAAllPayAuctionEnv(N)
+    elif auction == 'core_selecting':
+        N = 3
+        multiagent_env = MACoreSelectingAuctionEnv()
 
 
     ### --- Creating agents --- ###    

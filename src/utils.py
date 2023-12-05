@@ -82,6 +82,8 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
             expected_action = state
         elif auc_type == 'all_pay': # reminder that this expected action works only for N=2
             expected_action = (state**2)/2.0
+        elif auc_type == 'core_selecting':
+            expected_action = state
         avg_error += abs(action - expected_action)
         actions.append(action)
     avg_error /= len(states)
@@ -108,6 +110,8 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
         # plt.plot(states, states - eps + Y, color='brown', linewidth=0.5)
     elif auc_type == 'all_pay':
         plt.plot(states, (states**2)/2.0, color='brown', linewidth=0.5)
+    elif auc_type == 'core_selecting':
+        plt.plot(states, states, color='brown', linewidth=0.5)
 
     plt.title(formalize_name(auc_type) + ' Auction for ' + str(N) + ' players')
     plt.text(0.02, 0.94, 'Avg error: %.3f' % avg_error, fontsize=10, color='#696969')
