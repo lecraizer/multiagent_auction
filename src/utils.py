@@ -46,7 +46,7 @@ def decrease_learning_rate(agents, decrease_factor):
     print('Learning rate: ', param_group['lr'])
     
 
-def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_price', r=1, max_revenue=1, eps=0.1, vl=0, vh=1):
+def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_price', r=1, max_revenue=1, eps=0.1, vl=0, vh=1, gam=1):
     # reset plot variables
     plt.close('all')
 
@@ -83,7 +83,14 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
         elif auc_type == 'all_pay': # reminder that this expected action works only for N=2
             expected_action = (state**2)/2.0
         elif auc_type == 'core_selecting':
-            expected_action = state
+            if gam == 1:
+                expected_action = state
+            else:
+                d = (np.exp(-1+gam)-gam)/(1-gam)
+                if state <= d:
+                    expected_action = 0
+                else:
+                    expected_action = 1 + (np.log(gam+(1-gam)*state))/(1-gam)
         avg_error += abs(action - expected_action)
         actions.append(action)
     avg_error /= len(states)
@@ -111,6 +118,15 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
     elif auc_type == 'all_pay':
         plt.plot(states, (states**2)/2.0, color='brown', linewidth=0.5)
     elif auc_type == 'core_selecting':
+        if gam == 1:
+            plt.plot(states, states, color='brown', linewidth=0.5)
+        else:
+            d = (np.exp(-1+gam)-gam)/(1-gam)
+            if state <= d:
+                plt.plot(states, 0, color='brown', linewidth=0.5)
+            else:
+                plt.plot(states, 1 + (np.log(gam+(1-gam)*states))/(1-gam), color='brown', linewidth=0.5)
+
         plt.plot(states, states, color='brown', linewidth=0.5)
 
     plt.title(formalize_name(auc_type) + ' Auction for ' + str(N) + ' players')
@@ -139,6 +155,10 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
         # axes.set_ylim([vl, vh])
         # axes.set_xlim([0, 2])
         axes.set_ylim([0, 2])
+    # elif auc_type == 'core_selecting':
+    #     if agent_name == 'ag3':
+    #         axes.set_xlim([0, 2])
+    #         axes.set_ylim([0, 2])
 
     try:
         plt.savefig('results/' + auc_type + '/N=' + str(N) + '/' + agent_name + '_' + str(int(n_episodes/1000)) + 'k_' + 'r' + str(r) + '.png')

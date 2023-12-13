@@ -56,6 +56,10 @@ if __name__ == "__main__":
             score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, auction, 
                                         r=aversion_coef, max_revenue=max_revenue, 
                                         gif=create_gif, save_interval=50)
+        elif auction == 'core_selecting':
+            gam = 1.0
+            score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, auction, 
+                                        r=aversion_coef, gam=gam, gif=create_gif, save_interval=50)
         else:
             score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, auction, 
                                         r=aversion_coef, gif=create_gif, save_interval=50)

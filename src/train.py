@@ -8,7 +8,7 @@ import os
 from utils import *
 
 
-def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_revenue=1, gif=False, save_interval=10):
+def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_revenue=1, gam=1, gif=False, save_interval=10):
     '''
     Multiagent training loop function for general auctions
     '''
@@ -26,15 +26,17 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
         for idx in range(N):
             others_observations = observations[:idx] + observations[idx+1:]
             others_actions = original_actions[:idx] + original_actions[idx+1:]
-            for new_action in np.linspace(0.001, max_revenue-0.001, 10):
+            # for new_action in np.linspace(0.001, max_revenue-0.001, 10):
+            for new_action in np.random.random(10)*max_revenue:
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(observations, actions, r)
+                
                 maddpg.remember(observations[idx], actions[idx], rewards[idx], others_observations, others_actions)
                 loss = maddpg.learn()
                 if loss is not None:
                     batch_loss.append(loss)
 
-        decrease_factor = 0.999
+        decrease_factor = 0.99
         if ep % save_interval == 0:
             print('\nEpisode', ep)
             print('Values:  ', observations)
@@ -42,7 +44,7 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
             print('Rewards: ', original_rewards)
             for i in range(len(agents)):
                 hist = manualTesting(agents[i], N, 'ag'+str(i+1), ep, n_episodes, auc_type=auction_type, 
-                                     r=r, max_revenue=max_revenue)
+                                     r=r, max_revenue=max_revenue, gam=gam)
             
             literature_error.append(np.mean(hist))
             if len(batch_loss) > 0:
@@ -97,7 +99,7 @@ def MAtrainLoopCommonValue(maddpg, env, n_episodes, auction_type='first_price',
             # or try n=100 random actions
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(common_value, actions)
-                maddpg.remember(observations[idx], actions[idx], rewards[idx], others_observations, others_actions)
+                maddpg.remember(observations[idx], actions[idx], rewards[idx], observations[(idx+1)%2], actions[(idx+1)%2])
                 loss = maddpg.learn()
                 if loss is not None:
                     batch_loss.append(loss)

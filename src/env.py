@@ -319,5 +319,11 @@ class MACoreSelectingAuctionEnv(Env):
         return rewards
 
     def reset(self):
-        self.values = [random.random() for _ in range(self.N)]
+        w = 0.0
+        u = random.random()
+        v1 = u*w + random.random()*(1-w)
+        v2 = u*w + random.random()*(1-w)
+        g = random.random()*2   
+        self.values = [v1, v2, g]
+        # self.values = [random.random() for _ in range(self.N)]
         return self.values
