@@ -21,9 +21,11 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
     for ep in range(n_episodes):
         observations = env.reset()
         original_actions = [agents[i].choose_action(observations[i], ep)[0] for i in range(N)]
+        # original_actions = [agents[i].choose_action(observations[0], ep)[0] if i == 0 else (N-1/N)*observations[0]**2 for i in range(N)]
         original_rewards = env.step(observations, original_actions, r)
         batch_loss = []
         for idx in range(N):
+        # for idx in range(1):
             others_observations = observations[:idx] + observations[idx+1:]
             others_actions = original_actions[:idx] + original_actions[idx+1:]
             # for new_action in np.linspace(0.001, max_revenue-0.001, 10):
@@ -32,7 +34,7 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
                 rewards = env.step(observations, actions, r)
                 
                 maddpg.remember(observations[idx], actions[idx], rewards[idx], others_observations, others_actions)
-                loss = maddpg.learn()
+                loss = maddpg.learn(idx)
                 if loss is not None:
                     batch_loss.append(loss)
 

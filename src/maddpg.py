@@ -22,147 +22,146 @@ class MADDPG:
         self.short_memory = ReplayBuffer(1, input_dims, n_actions, self.num_agents)
 
 
-    def remember(self, state, action, reward, state2, action2):
-        self.memory.store_transition(state, action, reward, state2, action2)
-        self.short_memory.store_transition(state, action, reward, state2, action2)
+    def remember(self, state, action, reward, others_states, others_actions):
+        self.memory.store_transition(state, action, reward, others_states, others_actions)
+        self.short_memory.store_transition(state, action, reward, others_states, others_actions)
 
-
-    def learn(self):
+    def learn(self, idx):
         if self.memory.mem_cntr < self.batch_size:
             return
 
-        for agent_idx, agent in enumerate(self.agents):
-            # For each agent
-            device = self.agents[agent_idx].critic.device
-            
-            state, action, reward, others_states, others_actions = self.memory.sample_buffer(self.batch_size)
-            reward = T.tensor(reward, dtype=T.float).to(device)
-            action = T.tensor(action, dtype=T.float).to(device)
-            state = T.tensor(state, dtype=T.float).to(device)
+        # for agent_idx, agent in enumerate(self.agents):
+        #     # For each agent
+        agent = self.agents[idx]
+        device = agent.critic.device
+        
+        state, action, reward, others_states, others_actions = self.memory.sample_buffer(self.batch_size)
+        state = T.tensor(state, dtype=T.float).to(device)
+        action = T.tensor(action, dtype=T.float).to(device)
+        reward = T.tensor(reward, dtype=T.float).to(device)
 
-            others_actions = T.tensor(others_actions, dtype=T.float).to(device)
-            others_states = T.tensor(others_states, dtype=T.float).to(device)
+        others_states = T.tensor(others_states, dtype=T.float).to(device)
+        others_actions = T.tensor(others_actions, dtype=T.float).to(device)
 
-            agent.target_actor.eval()
-            agent.target_critic.eval()
-            agent.critic.eval()
+        agent.target_actor.eval()
+        agent.target_critic.eval()
+        agent.critic.eval()
 
-            target_actions = agent.target_actor.forward(state)           
-            
-            num_columns = others_states.shape[1] # get the number of columns in others_states
-            indexes = list(range(self.num_agents))
-            indexes.remove(agent_idx)
+        target_actions = agent.target_actor.forward(state)           
+        
+        num_columns = others_states.shape[1] # get the number of columns in others_states
+        indexes = list(range(self.num_agents))
+        indexes.remove(idx)
 
-            target_actions_list = [] # initialize an empty list to store the results
-            for i in range(num_columns): # loop through each column and apply target_actor.forward()
-                other_state_column = others_states[:, i].reshape(-1, 1)
-                other_agent_forward = self.agents[indexes[i]].target_actor.forward(other_state_column)
-                target_actions_list.append(other_agent_forward)
-            others_target_actions = T.cat(target_actions_list, dim=1) # concatenate the results along the second dimension
-            
-            # Calculate critic value and target critic value
-            critic_value_ = agent.target_critic.forward(state, target_actions, others_states, others_target_actions)
-            critic_value = agent.critic.forward(state, action, others_states, others_actions)
+        target_actions_list = [] # initialize an empty list to store the results
+        for i in range(num_columns): # loop through each column and apply target_actor.forward()
+            other_state_column = others_states[:, i].reshape(-1, 1)
+            other_agent_forward = self.agents[indexes[i]].target_actor.forward(other_state_column)
+            target_actions_list.append(other_agent_forward)
+        others_target_actions = T.cat(target_actions_list, dim=1) # concatenate the results along the second dimension
+        
+        # Calculate critic value and target critic value
+        critic_value_ = agent.target_critic.forward(state, target_actions, others_states, others_target_actions)
+        critic_value = agent.critic.forward(state, action, others_states, others_actions)
 
-            # Calculate target q value
-            target = []
-            for j in range(self.batch_size):
-                target.append(reward[j] + self.gamma*critic_value_[j])
-            target = T.tensor(target).to(device)
-            target = target.view(self.batch_size, 1)
+        # Calculate target q value
+        target = []
+        for j in range(self.batch_size):
+            target.append(reward[j] + self.gamma*critic_value_[j])
+        target = T.tensor(target).to(device)
+        target = target.view(self.batch_size, 1)
 
-            agent.critic.train()
-            agent.critic.optimizer.zero_grad()
-            critic_loss = F.mse_loss(target, critic_value)
-            critic_loss.backward()
-            agent.critic.optimizer.step()
+        agent.critic.train()
+        agent.critic.optimizer.zero_grad()
+        critic_loss = F.mse_loss(target, critic_value)
+        critic_loss.backward()
+        agent.critic.optimizer.step()
 
-            agent.critic.eval()
-            agent.actor.optimizer.zero_grad()
-            mu = agent.actor.forward(state)
+        agent.critic.eval()
+        agent.actor.optimizer.zero_grad()
+        mu = agent.actor.forward(state)
 
-            others_mus = [] # initialize an empty list to store the results
-            for i in range(num_columns): # loop through each column and apply target_actor.forward()
-                other_mu = others_states[:, i].reshape(-1, 1)
-                others_mus.append(self.agents[indexes[i]].target_actor.forward(other_mu))
-            others_mus = T.cat(others_mus, dim=1)
-            
-            agent.actor.train()
-            actor_loss = -agent.critic.forward(state, mu, others_states, others_mus)
+        others_mus = [] # initialize an empty list to store the results
+        for i in range(num_columns): # loop through each column and apply target_actor.forward()
+            other_mu = others_states[:, i].reshape(-1, 1)
+            others_mus.append(self.agents[indexes[i]].target_actor.forward(other_mu))
+        others_mus = T.cat(others_mus, dim=1)
+        
+        agent.actor.train()
+        actor_loss = -agent.critic.forward(state, mu, others_states, others_mus)
 
-            actor_loss = T.mean(actor_loss)
-            actor_loss.backward()
-            agent.actor.optimizer.step()
-
-            agent.update_network_parameters()
+        actor_loss = T.mean(actor_loss)
+        actor_loss.backward()
+        agent.actor.optimizer.step()
+        agent.update_network_parameters()
 
 
 
         # short memory
         if self.short_memory.mem_cntr < self.batch_size:
             return
+        
+        agent = self.agents[idx]
+        device = agent.critic.device
+        
+        state, action, reward, others_states, others_actions = self.short_memory.sample_buffer(self.batch_size)
+        # state, action, reward, others_states, others_actions = self.memory.sample_last_buffer(self.batch_size)
+        state = T.tensor(state, dtype=T.float).to(device)
+        action = T.tensor(action, dtype=T.float).to(device)
+        reward = T.tensor(reward, dtype=T.float).to(device)
 
-        for agent_idx, agent in enumerate(self.agents):
-            # For each agent
-            device = self.agents[agent_idx].critic.device
-            
-            state, action, reward, others_states, others_actions = self.short_memory.sample_buffer(self.batch_size)
-            reward = T.tensor(reward, dtype=T.float).to(device)
-            action = T.tensor(action, dtype=T.float).to(device)
-            state = T.tensor(state, dtype=T.float).to(device)
+        others_states = T.tensor(others_states, dtype=T.float).to(device)
+        others_actions = T.tensor(others_actions, dtype=T.float).to(device)
 
-            others_actions = T.tensor(others_actions, dtype=T.float).to(device)
-            others_states = T.tensor(others_states, dtype=T.float).to(device)
+        agent.target_actor.eval()
+        agent.target_critic.eval()
+        agent.critic.eval()
 
-            agent.target_actor.eval()
-            agent.target_critic.eval()
-            agent.critic.eval()
+        target_actions = agent.target_actor.forward(state)           
+        
+        num_columns = others_states.shape[1] # get the number of columns in others_states
+        indexes = list(range(self.num_agents))
+        indexes.remove(idx)
 
-            target_actions = agent.target_actor.forward(state)           
-            
-            num_columns = others_states.shape[1] # get the number of columns in others_states
-            indexes = list(range(self.num_agents))
-            indexes.remove(agent_idx)
+        target_actions_list = [] # initialize an empty list to store the results
+        for i in range(num_columns): # loop through each column and apply target_actor.forward()
+            other_state_column = others_states[:, i].reshape(-1, 1)
+            other_agent_forward = self.agents[indexes[i]].target_actor.forward(other_state_column)
+            target_actions_list.append(other_agent_forward)
+        others_target_actions = T.cat(target_actions_list, dim=1) # concatenate the results along the second dimension
+        
+        # Calculate critic value and target critic value
+        critic_value_ = agent.target_critic.forward(state, target_actions, others_states, others_target_actions)
+        critic_value = agent.critic.forward(state, action, others_states, others_actions)
 
-            target_actions_list = [] # initialize an empty list to store the results
-            for i in range(num_columns): # loop through each column and apply target_actor.forward()
-                other_state_column = others_states[:, i].reshape(-1, 1)
-                other_agent_forward = self.agents[indexes[i]].target_actor.forward(other_state_column)
-                target_actions_list.append(other_agent_forward)
-            others_target_actions = T.cat(target_actions_list, dim=1) # concatenate the results along the second dimension
-            
-            # Calculate critic value and target critic value
-            critic_value_ = agent.target_critic.forward(state, target_actions, others_states, others_target_actions)
-            critic_value = agent.critic.forward(state, action, others_states, others_actions)
+        # Calculate target q value
+        target = []
+        for j in range(self.batch_size):
+            target.append(reward[j] + self.gamma*critic_value_[j])
+        target = T.tensor(target).to(device)
+        target = target.view(self.batch_size, 1)
 
-            # Calculate target q value
-            target = []
-            for j in range(self.batch_size):
-                target.append(reward[j] + self.gamma*critic_value_[j])
-            target = T.tensor(target).to(device)
-            target = target.view(self.batch_size, 1)
+        agent.critic.train()
+        agent.critic.optimizer.zero_grad()
+        critic_loss = F.mse_loss(target, critic_value)
+        critic_loss.backward()
+        agent.critic.optimizer.step()
 
-            agent.critic.train()
-            agent.critic.optimizer.zero_grad()
-            critic_loss = F.mse_loss(target, critic_value)
-            critic_loss.backward()
-            agent.critic.optimizer.step()
+        agent.critic.eval()
+        agent.actor.optimizer.zero_grad()
+        mu = agent.actor.forward(state)
 
-            agent.critic.eval()
-            agent.actor.optimizer.zero_grad()
-            mu = agent.actor.forward(state)
+        others_mus = [] # initialize an empty list to store the results
+        for i in range(num_columns): # loop through each column and apply target_actor.forward()
+            other_mu = others_states[:, i].reshape(-1, 1)
+            others_mus.append(self.agents[indexes[i]].target_actor.forward(other_mu))
+        others_mus = T.cat(others_mus, dim=1)
+        
+        agent.actor.train()
+        actor_loss = -agent.critic.forward(state, mu, others_states, others_mus)
 
-            others_mus = [] # initialize an empty list to store the results
-            for i in range(num_columns): # loop through each column and apply target_actor.forward()
-                other_mu = others_states[:, i].reshape(-1, 1)
-                others_mus.append(self.agents[indexes[i]].target_actor.forward(other_mu))
-            others_mus = T.cat(others_mus, dim=1)
-            
-            agent.actor.train()
-            actor_loss = -agent.critic.forward(state, mu, others_states, others_mus)
-
-            actor_loss = T.mean(actor_loss)
-            actor_loss.backward()
-            agent.actor.optimizer.step()
-
-            agent.update_network_parameters()
+        actor_loss = T.mean(actor_loss)
+        actor_loss.backward()
+        agent.actor.optimizer.step()
+        agent.update_network_parameters()
+        

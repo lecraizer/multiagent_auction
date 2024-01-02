@@ -323,7 +323,7 @@ class MACoreSelectingAuctionEnv(Env):
         u = random.random()
         v1 = u*w + random.random()*(1-w)
         v2 = u*w + random.random()*(1-w)
-        g = random.random()*2   
+        g = random.random()
         self.values = [v1, v2, g]
         # self.values = [random.random() for _ in range(self.N)]
         return self.values

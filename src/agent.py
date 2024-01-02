@@ -42,7 +42,6 @@ class Agent(object):
         if evaluation:
             mu_prime = mu
         else:
-
             noise = T.tensor(np.random.normal(0, 0.2), dtype=T.float).to(self.actor.device)
             mu_prime = mu + (noise*(1-(episode/self.total_episodes)))
             mu_prime = mu_prime.clamp(0, 1)

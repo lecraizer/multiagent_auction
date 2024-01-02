@@ -81,7 +81,7 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
             # expected_action = state - eps + Y
             expected_action = state
         elif auc_type == 'all_pay': # reminder that this expected action works only for N=2
-            expected_action = (state**2)/2.0
+            expected_action = (state**N)*(N-1)/(N)
         elif auc_type == 'core_selecting':
             if gam == 1:
                 expected_action = state
@@ -116,7 +116,7 @@ def manualTesting(agent, N, agent_name, episode, n_episodes, auc_type='first_pri
         # Y = ( (2*eps)/(N+1) ) * np.exp( (-N/(2*eps) )*( states-(vl+eps) ) )
         # plt.plot(states, states - eps + Y, color='brown', linewidth=0.5)
     elif auc_type == 'all_pay':
-        plt.plot(states, (states**2)/2.0, color='brown', linewidth=0.5)
+        plt.plot(states, (states**N)*(N-1)/(N), color='brown', linewidth=0.5)
     elif auc_type == 'core_selecting':
         if gam == 1:
             plt.plot(states, states, color='brown', linewidth=0.5)

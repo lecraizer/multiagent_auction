@@ -32,3 +32,18 @@ class ReplayBuffer(object):
         others_actions = self.others_actions[batch]
 
         return states, actions, rewards, others_states, others_actions
+    
+    def sample_last_buffer(self, batch_size):
+        '''
+        Sample the last batch_size elements of the buffer
+        '''
+        if self.mem_cntr < batch_size:
+            batch_size = self.mem_cntr 
+        states = self.state_memory[self.mem_cntr-batch_size:self.mem_cntr]
+        actions = self.action_memory[self.mem_cntr-batch_size:self.mem_cntr]
+        rewards = self.reward_memory[self.mem_cntr-batch_size:self.mem_cntr]
+
+        others_states = self.others_states[self.mem_cntr-batch_size:self.mem_cntr]
+        others_actions = self.others_actions[self.mem_cntr-batch_size:self.mem_cntr]
+
+        return states, actions, rewards, others_states, others_actions
