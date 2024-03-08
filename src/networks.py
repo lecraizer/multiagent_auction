@@ -44,6 +44,7 @@ class ActorNetwork(nn.Module):
         self.fc1 = nn.Linear(input_dims, fc1_dims)        
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.mu = nn.Linear(fc2_dims, n_actions)
+        self.n_agents = n_agents
 
         # Initialization settings
         f1 = 1./np.sqrt(self.fc1.weight.data.size()[0])
@@ -67,6 +68,7 @@ class ActorNetwork(nn.Module):
         x = F.relu(x)
         x = self.fc2(x)
         x = T.sigmoid(self.mu(x))
+        # x = T.sigmoid(self.mu(x)) * 2
         return x
 
     def save_checkpoint(self, name):

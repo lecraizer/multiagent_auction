@@ -27,7 +27,7 @@ if __name__ == "__main__":
     elif auction == 'common_value':
         multiagent_env = MAAlternativeCommonPriceAuctionEnv(N)
     elif auction == 'tariff_discount':
-        max_revenue = 1
+        max_revenue = 3
         multiagent_env = MATariffDiscountEnv(N, max_revenue=max_revenue)
     elif auction == 'all_pay':
         multiagent_env = MAAllPayAuctionEnv(N)

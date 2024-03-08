@@ -32,7 +32,6 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
             for new_action in np.random.random(10)*max_revenue:
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(observations, actions, r)
-                
                 maddpg.remember(observations[idx], actions[idx], rewards[idx], others_observations, others_actions)
                 loss = maddpg.learn(idx)
                 if loss is not None:
@@ -44,8 +43,7 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
             print('Values:  ', observations)
             print('Bids:    ', original_actions)
             print('Rewards: ', original_rewards)
-            for i in range(len(agents)):
-                hist = manualTesting(agents[i], N, 'ag'+str(i+1), ep, n_episodes, auc_type=auction_type, 
+            hist = manualTesting(agents, N, ep, n_episodes, auc_type=auction_type, 
                                      r=r, max_revenue=max_revenue, gam=gam)
             
             literature_error.append(np.mean(hist))
@@ -98,14 +96,12 @@ def MAtrainLoopCommonValue(maddpg, env, n_episodes, auction_type='first_price',
             others_observations = observations[:idx] + observations[idx+1:]
             others_actions = original_actions[:idx] + original_actions[idx+1:]
             for new_action in np.linspace(vl+0.001, vh-0.001, 10): # test n different actions
-            # or try n=100 random actions
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(common_value, actions)
-                maddpg.remember(observations[idx], actions[idx], rewards[idx], observations[(idx+1)%2], actions[(idx+1)%2])
-                loss = maddpg.learn()
+                maddpg.remember(observations[idx], actions[idx], rewards[idx], others_observations, others_actions)
+                loss = maddpg.learn(idx)
                 if loss is not None:
                     batch_loss.append(loss)
-        
         
         decrease_factor = 0.999
         if ep % save_interval == 0:
@@ -114,8 +110,7 @@ def MAtrainLoopCommonValue(maddpg, env, n_episodes, auction_type='first_price',
             print('Signals: ', observations)
             print('Bids:    ', original_actions)
             print('Rewards: ', original_rewards)
-            for i in range(len(agents)):
-                hist = manualTesting(agents[i], N, 'ag'+str(i+1), ep, n_episodes, auc_type=auction_type, vl=vl, vh=vh, eps=eps)
+            hist = manualTesting(agents[i], N, 'ag'+str(i+1), ep, n_episodes, auc_type=auction_type, vl=vl, vh=vh, eps=eps)
             
             literature_error.append(hist)
             if len(batch_loss) > 0:
@@ -153,22 +148,17 @@ def MAtrainLoopAlternativeCommonValue(maddpg, env, n_episodes,
     loss_history = []
     for ep in range(n_episodes):
         common_value, observations = env.reset()
-        
         original_actions = [agents[i].choose_action(observations[i], ep)[0] for i in range(N)]
-        
-        # original_actions[1] = observations[1] # player 2 in Nash Equilibrium trial
-
         original_rewards = env.step(common_value, original_actions)
-
         batch_loss = []
         for idx in range(N):
-            # if idx == 1:
-            #     continue
-            for new_action in np.linspace(0, N, 10): # test n different actions
+            others_observations = observations[:idx] + observations[idx+1:]
+            others_actions = original_actions[:idx] + original_actions[idx+1:]
+            for new_action in np.random.random(10)*N:
                 actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(common_value, actions)
-                maddpg.remember(observations[idx], actions[idx], rewards[idx], observations[(idx+1)%2], actions[(idx+1)%2])
-                loss = maddpg.learn()
+                maddpg.remember(observations[idx], actions[idx], rewards[idx], others_observations, others_actions)
+                loss = maddpg.learn(idx)
                 if loss is not None:
                     batch_loss.append(loss)
         
@@ -179,9 +169,7 @@ def MAtrainLoopAlternativeCommonValue(maddpg, env, n_episodes,
             print('Signals: ', observations)
             print('Bids:    ', original_actions)
             print('Rewards: ', original_rewards)
-            for i in range(len(agents)):
-                hist = manualTesting(agents[i], N, 'ag'+str(i+1), ep, n_episodes, 
-                                     auc_type=auction_type)
+            hist = manualTesting(agents, N, ep, n_episodes, auc_type=auction_type)
             
             literature_error.append(hist)
             if len(batch_loss) > 0:
