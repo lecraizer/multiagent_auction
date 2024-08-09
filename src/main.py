@@ -67,21 +67,27 @@ if __name__ == "__main__":
 
     # Else, load models
     else:
-        print('Loading models...') 
+        print('Loading models...')
+        agents = maddpg.agents
         for k in range(N):
-            string = auction + '_ag' + str(k) + '_r' + str(aversion_coef) + '_' + str(n_episodes) + 'ep'
-            maddpg[k].load_models(string)
+            string = auction + '_N_' + str(N) + '_ag' + str(k) + '_r' + str(aversion_coef) + '_' + str(n_episodes) + 'ep'
+            agents[k].load_models(string)
             
 
         ### --- Tranfer learning step --- ###
         # multiagent_env = MAAlternativeCommonPriceAuctionEnv(N)
-        score_history = MAtrainLoopAlternativeCommonValue(maddpg, multiagent_env, 
-                                                              n_episodes, auction, 
-                                                              save_interval=save_interval)
-        
+        # score_history = MAtrainLoopAlternativeCommonValue(maddpg, multiagent_env, 
+        #                                                       n_episodes, auction, 
+        #                                                       save_interval=save_interval)
+        # score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, auction, 
+        #                     r=aversion_coef, gif=create_gif, save_interval=50)
+
         playsound('beep.mp3') if alert else None # beep when training is done    
 
 
-        # ### --- Evaluation step --- ###
-        # N = 100
-        # evaluate(agents, N)
+        ### --- Evaluation step --- ###
+        n_samples = 100
+        # evaluate_N(agents, n_samples, auc_type=auction)
+        new_evaluate_agents(agents, n_samples, auc_type=auction)
+        # evaluate_one_agent(agents, k=0, num_samples=n_samples)
+        # evaluate_one_agent_against_itself(agents, k=1, num_samples=n_samples)

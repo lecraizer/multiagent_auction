@@ -130,8 +130,8 @@ def manualTesting(agents, N, episode, n_episodes, auc_type='first_price', r=1, m
     elif auc_type == 'all_pay':
         if N > 2:
             plt.plot(states, (states**N)*(N-1)/(N), color='#AD1515', linewidth=1.0, label='Expected bid N=%i' % N)
-            plt.plot(states, (states**3)*(3-1)/(3), color='#7B14AF', linewidth=1.0, label='Expected bid N=3')
-            # plt.plot(states, (states**2)*(2-1)/(2), color='#7B14AF', linewidth=1.0, label='Expected bid N=2')
+            # plt.plot(states, (states**3)*(3-1)/(3), color='#7B14AF', linewidth=1.0, label='Expected bid N=3')
+            plt.plot(states, (states**2)*(2-1)/(2), color='#7B14AF', linewidth=1.0, label='Expected bid N=2')
         else:
             plt.plot(states, (states**N)*(N-1)/(N), color='#AD1515', linewidth=1.0, label='Expected bid')
     elif auc_type == 'core_selecting':

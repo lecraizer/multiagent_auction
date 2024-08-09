@@ -32,7 +32,7 @@ class CriticNetwork(nn.Module):
 
     def load_checkpoint(self, name):
         print('... Loading critic model for ' + name + ' ...')
-        self.load_state_dict(T.load(self.checkpoint_file + '_' + name))
+        self.load_state_dict(T.load(self.checkpoint_file + '_' + name, map_location=T.device('cuda:0' if T.cuda.is_available() else 'cpu')))
 
 
 class ActorNetwork(nn.Module):
@@ -77,4 +77,4 @@ class ActorNetwork(nn.Module):
 
     def load_checkpoint(self, name):
         print('... Loading actor model for ' + name + ' ...')
-        self.load_state_dict(T.load(self.checkpoint_file + '_' + name))
+        self.load_state_dict(T.load(self.checkpoint_file + '_' + name, map_location=T.device('cuda:0' if T.cuda.is_available() else 'cpu')))

@@ -52,7 +52,7 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
             
             # save models each n episodes
             for k, agent in enumerate(agents):
-                string = auction_type + '_ag' + str(k) + '_r' + str(r) + '_' + str(n_episodes) + 'ep'
+                string = auction_type + '_N_' + str(N) + '_ag' + str(k) + '_r' + str(r) + '_' + str(n_episodes) + 'ep'
                 agents[k].save_models(string)
 
             # decrease learning rate each n episodes
@@ -118,7 +118,7 @@ def MAtrainLoopCommonValue(maddpg, env, n_episodes, auction_type='first_price',
 
             # save models each n episodes
             for k, agent in enumerate(agents):
-                string = auction_type + '_ag' + str(k) + '_r' + str(r) + '_' + str(n_episodes) + 'ep'
+                string = auction_type + '_N_' + str(N) + '_ag' + str(k) + '_r' + str(r) + '_' + str(n_episodes) + 'ep'
                 agents[k].save_models(string)
 
             # decrease learning rate each n episodes
@@ -177,7 +177,7 @@ def MAtrainLoopAlternativeCommonValue(maddpg, env, n_episodes,
 
             # save models each n episodes
             for k, agent in enumerate(agents):
-                string = auction_type + '_ag' + str(k) + '_r' + str(r) + '_' + str(n_episodes) + 'ep'
+                string = auction_type + '_N_' + str(N) + '_ag' + str(k) + '_r' + str(r) + '_' + str(n_episodes) + 'ep'
                 agents[k].save_models(string)
 
             # decrease learning rate each n episodes
