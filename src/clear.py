@@ -1,3 +1,5 @@
+# Script to clear up saved models and results after test runs
+
 import os
 import argparse
 
@@ -15,6 +17,10 @@ def clear_data():
 
 
 def main():
+    '''
+    Main function to clear data
+    '''
+
     user_input = input("Are you sure you want to clear data? (Y/n): ").lower()
 
     # If the user enters "yes" or simply presses Enter (default value)

@@ -1,9 +1,12 @@
+# Description: This file contains the implementation of the Actor and Critic networks used in the MADDPG algorithm
+
 import os
 import numpy as np
 import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+
 
 class CriticNetwork(nn.Module):
     def __init__(self, beta, input_dims, fc1_dims, fc2_dims, n_actions, 
@@ -14,7 +17,6 @@ class CriticNetwork(nn.Module):
         self.fc1 = nn.Linear(sumation, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.q = nn.Linear(fc2_dims, 1)
-
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
@@ -68,7 +70,7 @@ class ActorNetwork(nn.Module):
         x = F.relu(x)
         x = self.fc2(x)
         x = T.sigmoid(self.mu(x))
-        # x = T.sigmoid(self.mu(x)) * 2
+        # x = T.sigmoid(self.mu(x)) * 2 # uncomment this line for auctions where the action space is [0,2]
         return x
 
     def save_checkpoint(self, name):

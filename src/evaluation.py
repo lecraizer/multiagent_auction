@@ -1,4 +1,7 @@
+# Module to evaluate the performance of the agents and check if agents converge to their optimal bids
+
 import numpy as np
+
 
 def evaluate(agents, n_bids=100):
     '''
@@ -46,48 +49,6 @@ def evaluate(agents, n_bids=100):
     equation = np.mean(differences) / (sum_opt_revenues/n_bids)
     print('\nError equation Bichler:', equation)
 
-
-'''
-    # do the exact same thing for player 2
-
-    # list of bids for player 2 given random private values
-    bids_player2 = [agents[1].choose_action(np.random.random(), 0, evaluation=True)[0] for i in range(n_bids)]
-
-    differences1 = []
-    for i in range(sample_size):
-        v1 = np.random.random()
-        # print('v1:', v1)
-        
-        # Left revenue and bid
-        b1 = agents[0].choose_action(v1, 0, evaluation=True)[0]
-        win_prob = sum([b1 > b2 for b2 in bids_player2])/n_bids
-        opt_empirical_revenu = (v1 - b1)*win_prob
-
-        # print('Optimal left bid:', b1)
-        # print('Optimal left revenue:', opt_empirical_revenu)
-
-        # Right revenue and bid
-        opt_right_revenue = 0.0
-        opt_right_bid = 0.0
-        for b in range(n_bids):
-            b1 = b/n_bids
-            win_prob = sum([b1 > b2 for b2 in bids_player2])/n_bids
-            right_revenue = (v1 - b1) * win_prob
-            if right_revenue > opt_right_revenue:
-                opt_right_revenue = right_revenue
-                opt_right_bid = b1
-        # print('Optimal right bid:', opt_right_bid)
-        # print('Optimal right revenue:', opt_right_revenue)
-
-        # Absolute difference between optimal revenues
-        diff = abs(opt_empirical_revenu - opt_right_revenue)
-        # print('Difference:', diff)
-        differences1.append(diff)
-
-    print('Average difference player 1:', np.mean(differences1))
-
-    return np.mean(differences1), np.mean(differences)
-'''
 
 def calculate_win_probability(own_bid, others_bids):
     '''
@@ -263,7 +224,7 @@ def new_evaluate_agents(agents, n_bids=100, grid_precision=100, auc_type='first_
     '''
     Evaluate the agents by comparing their bids to the optimal bids
     '''
-    sum_all_players = 0.0
+    sums_of_diffs = []
     for k in range(len(agents)):
         others_bids = []
         for j in range(len(agents)):
@@ -274,7 +235,7 @@ def new_evaluate_agents(agents, n_bids=100, grid_precision=100, auc_type='first_
         differences = []
         diff_bids_list = []
         sum_opt_revenues = 0.0
-        for i in range(n_bids):
+        for i in range(200):
             own_value = np.random.random() # random private value        
             opt_empirical_revenue = 0.0 # optimal left revenue
             optimal_bid = 0.0
@@ -302,7 +263,8 @@ def new_evaluate_agents(agents, n_bids=100, grid_precision=100, auc_type='first_
             diff = abs(opt_empirical_revenue - opt_player_revenue)
             differences.append(diff)
 
-        # print('\nAverage difference player', k+1, ':', np.mean(differences))
-        sum_all_players += np.mean(differences)
+        sums_of_diffs.append(np.mean(diff_bids_list))
 
         print('\nAvg diff bids player', k+1, ':', np.mean(diff_bids_list))
+
+    print('\nAverage difference all players:', np.mean(sums_of_diffs))

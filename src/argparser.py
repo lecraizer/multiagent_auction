@@ -8,6 +8,7 @@ def parse_args():
 
     n_episodes = 2000 # number of episodes
     N = 2 # number of players
+    noise_std = 0.2 # noise standard deviation
     r = 1 # aversion coefficient
     BS = 64 # batch size
     ponderated_avg = 100 # ponderated average size
@@ -24,6 +25,7 @@ def parse_args():
     parser.add_argument('-e', '--episodes', type=int, help='Total number of training episodes')
     parser.add_argument('-g', '--gif', type=int, help='Create state-actions plot gif')
     parser.add_argument('-n', '--players', type=int, help='Total number of players')
+    parser.add_argument('-o', '--noise', type=float, help='Noise standard deviation')
     parser.add_argument('-p', '--ponderated', type=int, help='Ponderated average size')
     parser.add_argument('-r', '--aversion_coef', type=float, help='Aversion coefficient')
     parser.add_argument('-s', '--save', type=int, help='Save plot')
@@ -44,6 +46,8 @@ def parse_args():
         create_gif = args.gif
     if args.players: # n
         N = args.players
+    if args.noise: # o
+        noise_std = args.noise
     if args.ponderated: # p
         ponderated_avg = args.ponderated
     if args.aversion_coef: # r
@@ -61,6 +65,7 @@ def parse_args():
     print('Number of episodes: ', n_episodes) # e
     print('Create gif: ', create_gif) # g
     print('Number of players: ', N) # n
+    print('Noise standard deviation: ', noise_std) # o
     print('Ponderated average size: ', ponderated_avg) # p
     print('Aversion coefficient: ', r) # r
     print('Save plot: ', save_plot) # s
@@ -68,4 +73,4 @@ def parse_args():
     print('Number of executions: ', z) # z
     print('\n')
 
-    return auction, BS, trained, n_episodes, create_gif, N, ponderated_avg, r, save_plot, alert, z
+    return auction, BS, trained, n_episodes, create_gif, N, noise_std, ponderated_avg, r, save_plot, alert, z

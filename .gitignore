@@ -1,13 +1,14 @@
 # My files
 models/
 old/
-paper_icmla_results/
+paper_icaart_results/
 results/common_value
 results/first_price
 results/second_price
 results/tariff_discount
 results/all_pay
 results/core_selecting
+results/joint_first_price
 singleagent_results/common_value
 singleagent_results/all_pay
 singleagent_results/first_price
@@ -16,6 +17,7 @@ singleagent_results/tariff_discount
 stuff/
 .tmp/
 attributes.git
+trial.py
 
 # Byte-compiled / optimized / DLL files
 src/__pycache__/

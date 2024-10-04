@@ -6,11 +6,12 @@ from networks import ActorNetwork, CriticNetwork
 class Agent(object):
     def __init__(self, alpha, beta, input_dims, tau, gamma=0.99,
                  n_agents=2, n_actions=1, layer1_size=400, layer2_size=300, 
-                 batch_size=64, total_eps=100000):
+                 batch_size=64, total_eps=100000, noise_std=0.2):
         self.gamma = gamma
         self.tau = tau
         self.batch_size = batch_size
         self.total_episodes = total_eps
+        self.noise_std = noise_std
         self.actor = ActorNetwork(alpha, input_dims, layer1_size,
                                   layer2_size, n_actions=n_actions,
                                   name='actor', n_agents=n_agents)
@@ -42,7 +43,7 @@ class Agent(object):
         if evaluation:
             mu_prime = mu
         else:
-            noise = T.tensor(np.random.normal(0, 0.2), dtype=T.float).to(self.actor.device)
+            noise = T.tensor(np.random.normal(0, self.noise_std), dtype=T.float).to(self.actor.device)
             mu_prime = mu + (noise*(1-(episode/self.total_episodes)))
             mu_prime = mu_prime.clamp(0, 1)
 

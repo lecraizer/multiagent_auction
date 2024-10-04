@@ -1,3 +1,5 @@
+# Module for setting up the replay buffer for the multi-agent DDPG algorithm
+
 import numpy as np
 
 class ReplayBuffer(object):

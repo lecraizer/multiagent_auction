@@ -1,19 +1,22 @@
+# Module to implement the multi-agent DDPG algorithm
+
 from agent import Agent
 from buffer import ReplayBuffer
+
 import torch as T
 import torch.nn.functional as F
 
 class MADDPG:
     def __init__(self, alpha=0.000025, beta=0.00025, input_dims=1, 
                  tau=0.001, gamma=0.99, BS=64, fc1=64, fc2=64, 
-                 n_actions=1, n_agents=2, total_eps=100000):
+                 n_actions=1, n_agents=2, total_eps=100000, noise_std=0.2):
         self.agents = []
         self.num_agents = n_agents
         for i in range(n_agents):
             self.agents.append(Agent(alpha=alpha, beta=beta, input_dims=input_dims, 
                                      tau=tau, batch_size=BS, layer1_size=fc1, 
                                      layer2_size=fc2, n_agents=self.num_agents,
-                                     n_actions=n_actions, total_eps=total_eps))
+                                     n_actions=n_actions, total_eps=total_eps, noise_std=noise_std))
             
         self.batch_size = BS
         self.gamma = gamma
@@ -95,8 +98,6 @@ class MADDPG:
         agent.actor.optimizer.step()
         agent.update_network_parameters()
 
-
-
         # short memory
         if self.short_memory.mem_cntr < self.batch_size:
             return
@@ -105,7 +106,6 @@ class MADDPG:
         device = agent.critic.device
         
         state, action, reward, others_states, others_actions = self.short_memory.sample_buffer(self.batch_size)
-        # state, action, reward, others_states, others_actions = self.memory.sample_last_buffer(self.batch_size)
         state = T.tensor(state, dtype=T.float).to(device)
         action = T.tensor(action, dtype=T.float).to(device)
         reward = T.tensor(reward, dtype=T.float).to(device)
