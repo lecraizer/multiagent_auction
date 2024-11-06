@@ -18,6 +18,8 @@ def parse_args():
     alert = 0 # alert
     trained = 0 # set to '1' to load models instead of training them
     create_gif = 0 # create gif
+    extra_players = 2 # extra players
+    transfer_learning = False # transfer learning
 
     parser.add_argument('-a', '--auction', type=str, help='Auction type')
     parser.add_argument('-b', '--batch', type=int, help='Batch size')
@@ -30,6 +32,8 @@ def parse_args():
     parser.add_argument('-r', '--aversion_coef', type=float, help='Aversion coefficient')
     parser.add_argument('-s', '--save', type=int, help='Save plot')
     parser.add_argument('-t', '--alert', type=int, help='Beep when training is done')
+    parser.add_argument('-tl', '--transfer_learning', type=bool, help='Transfer learning')
+    parser.add_argument('-x', '--extra_players', type=int, help='Extra players')
     parser.add_argument('-z', '--executions', type=int, help='Number of executions')
     args = parser.parse_args()
 
@@ -56,6 +60,10 @@ def parse_args():
         save_plot = args.save
     if args.alert: # t
         alert = args.alert
+    if args.transfer_learning: # tl
+        transfer_learning = args.transfer_learning
+    if args.extra_players: # x
+        extra_players = args.extra_players
     if args.executions: # z
         z = args.executions
 
@@ -70,7 +78,9 @@ def parse_args():
     print('Aversion coefficient: ', r) # r
     print('Save plot: ', save_plot) # s
     print('Alert: ', alert) # t
+    print('Transfer learning: ', transfer_learning) # tl
+    print('Extra players: ', extra_players) # x
     print('Number of executions: ', z) # z
     print('\n')
 
-    return auction, BS, trained, n_episodes, create_gif, N, noise_std, ponderated_avg, r, save_plot, alert, z
+    return auction, BS, trained, n_episodes, create_gif, N, noise_std, ponderated_avg, r, save_plot, alert, transfer_learning, extra_players, z

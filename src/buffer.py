@@ -9,9 +9,9 @@ class ReplayBuffer(object):
         self.state_memory = np.zeros((self.mem_size, input_shape))
         self.action_memory = np.zeros((self.mem_size, n_actions))
         self.reward_memory = np.zeros(self.mem_size)
-        
         self.others_states = np.zeros((self.mem_size, input_shape*(num_agents-1)))
         self.others_actions = np.zeros((self.mem_size, n_actions*(num_agents-1)))
+
 
     def store_transition(self, state, action, reward, others_states, others_actions):
         index = self.mem_cntr % self.mem_size

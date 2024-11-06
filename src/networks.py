@@ -10,11 +10,14 @@ import torch.optim as optim
 
 class CriticNetwork(nn.Module):
     def __init__(self, beta, input_dims, fc1_dims, fc2_dims, n_actions, 
-                 name, n_agents=2, chkpt_dir='models/critic'):
+                 name, n_agents=2, chkpt_dir='models/critic', 
+                 flag=False, extra=2):
         super(CriticNetwork, self).__init__()
         self.checkpoint_file = os.path.join(chkpt_dir,name)
-        sumation = n_agents*(input_dims+n_actions)
-        self.fc1 = nn.Linear(sumation, fc1_dims)
+        shape_of_input = n_agents*(input_dims+n_actions)
+        if flag:
+            shape_of_input = (n_agents+extra)*(input_dims+n_actions)
+        self.fc1 = nn.Linear(shape_of_input, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.q = nn.Linear(fc2_dims, 1)
         self.optimizer = optim.Adam(self.parameters(), lr=beta)

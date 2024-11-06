@@ -6,7 +6,8 @@ from networks import ActorNetwork, CriticNetwork
 class Agent(object):
     def __init__(self, alpha, beta, input_dims, tau, gamma=0.99,
                  n_agents=2, n_actions=1, layer1_size=400, layer2_size=300, 
-                 batch_size=64, total_eps=100000, noise_std=0.2):
+                 batch_size=64, total_eps=100000, noise_std=0.2, 
+                 tl_flag=False, extra_players=2):
         self.gamma = gamma
         self.tau = tau
         self.batch_size = batch_size
@@ -18,14 +19,16 @@ class Agent(object):
 
         self.critic = CriticNetwork(beta, input_dims, layer1_size,
                                     layer2_size, n_actions=n_actions,
-                                    name='critic', n_agents=n_agents)
+                                    name='critic', n_agents=n_agents,
+                                    flag=tl_flag, extra=extra_players)
 
         self.target_actor = ActorNetwork(alpha, input_dims, layer1_size,
                                          layer2_size, n_actions=n_actions,
                                          name='target_actor', n_agents=n_agents)
         self.target_critic = CriticNetwork(beta, input_dims, layer1_size,
                                            layer2_size, n_actions=n_actions,
-                                           name='target_critic', n_agents=n_agents)
+                                           name='target_critic', n_agents=n_agents,
+                                           flag=tl_flag, extra=extra_players)
 
         self.update_network_parameters(tau=1)
     

@@ -12,7 +12,8 @@ if __name__ == "__main__":
 
     ### --- Parsing arguments --- ###
     auction, BS, trained, n_episodes, create_gif, N, noise_std, \
-    ponderated_avg, aversion_coef, save_plot, alert, z = parse_args() # get parameters
+    ponderated_avg, aversion_coef, save_plot, alert, \
+    tl, extra_players, z = parse_args() # get parameters
 
     ### --- Creating environment --- ###
     if auction == 'first_price':
@@ -36,7 +37,8 @@ if __name__ == "__main__":
     ### --- Creating agents --- ###    
     maddpg = MADDPG(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001,
                     gamma=0.99, BS=BS, fc1=100, fc2=100, n_actions=1, 
-                    n_agents=N, total_eps=n_episodes,  noise_std=0.2)
+                    n_agents=N, total_eps=n_episodes,  noise_std=0.2, 
+                    tl_flag=tl, extra_players=extra_players)
 
 
     ### --- Training step --- ###
@@ -60,30 +62,58 @@ if __name__ == "__main__":
                                         r=aversion_coef, gam=gam, gif=create_gif, save_interval=50)
         else:
             score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, auction, 
-                                        r=aversion_coef, gif=create_gif, save_interval=50)
+                                        r=aversion_coef, gif=create_gif, save_interval=50, tl_flag=tl, extra_players=extra_players)
         # playsound('beep.mp3') if alert else None # beep when training is done    
+
 
     # Else, load models
     else:
         print('Loading models...')
-        agents = maddpg.agents
-        for k in range(N):
-            string = auction + '_N_' + str(N) + '_ag' + str(k) + '_r' + str(aversion_coef) + '_' + str(n_episodes) + 'ep'
-            agents[k].load_models(string)
+        if tl:
+            new_N = N + extra_players
+            print('New number of agents:', new_N)
+            ## --- Transfer learning step --- ###
+            print('Transfer learning...')
+            maddpg = MADDPG(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001,
+                            gamma=0.99, BS=BS, fc1=100, fc2=100, n_actions=1,
+                            n_agents=new_N, total_eps=n_episodes, noise_std=0.2, 
+                            tl_flag=False, extra_players=extra_players)
+            
+            # load trained agents
+            for k in range(N):
+                string = auction + '_N_' + str(N) + '_ag' + str(k) + '_r' + str(aversion_coef) + '_' + str(n_episodes) + 'ep'
+                maddpg.agents[k].load_models(string)
 
-        # ## --- Tranfer learning step --- ###
-        # multiagent_env = MAAlternativeCommonPriceAuctionEnv(N)
-        # score_history = MAtrainLoopAlternativeCommonValue(maddpg, multiagent_env, 
-        #                                                       n_episodes, auction, 
-        #                                                       save_interval=50)
+            # copy first N agents' parameters to the last N agents
+            for k in range(new_N-N):
+                maddpg.agents[k+N].actor.load_state_dict(maddpg.agents[k].actor.state_dict())
+                maddpg.agents[k+N].critic.load_state_dict(maddpg.agents[k].critic.state_dict())
+                maddpg.agents[k+N].target_actor.load_state_dict(maddpg.agents[k].target_actor.state_dict())
+                maddpg.agents[k+N].target_critic.load_state_dict(maddpg.agents[k].target_critic.state_dict())
 
-        # playsound('beep.mp3') if alert else None # beep when training is done    
+            
+            # train everyone in all-pay auction
+            print('Training models...')
+            if auction == 'first_price':
+                multiagent_env = MAFirstPriceAuctionEnv(new_N)
+                score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, 'first_price', 
+                                            r=aversion_coef, gif=create_gif, save_interval=50, 
+                                            tl_flag=False, extra_players=extra_players)
+            elif auction == 'second_price':
+                multiagent_env = MASecondPriceAuctionEnv(new_N)
+                score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, 'second_price', 
+                                            r=aversion_coef, gif=create_gif, save_interval=50, 
+                                            tl_flag=False, extra_players=extra_players)
+            elif auction == 'all_pay':    
+                multiagent_env = MAAllPayAuctionEnv(new_N)
+                score_history = MAtrainLoop(maddpg, multiagent_env, n_episodes, 'all_pay', 
+                                            r=aversion_coef, gif=create_gif, save_interval=50, 
+                                            tl_flag=False, extra_players=extra_players)
         
-
-        ## --- Evaluation step --- ###
-
-        n_samples = 100
-        # evaluate_N(agents, n_samples, auc_type=auction)
-        new_evaluate_agents(agents, n_samples, auc_type=auction)
-        # evaluate_one_agent(agents, k=0, num_samples=n_samples)
-        # evaluate_one_agent_against_itself(agents, k=1, num_samples=n_samples)
+                
+        else:
+            ## --- Evaluation step --- ###
+            print('Evaluating models...')
+            n_samples = 100
+            agents = maddpg.agents
+            new_evaluate_agents(agents, n_samples, auc_type=auction)

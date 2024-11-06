@@ -111,12 +111,15 @@ def manualTesting(agents, N, episode, n_episodes, auc_type='first_price', r=1, m
     elif auc_type == 'all_pay':
         if N > 2:
             plt.plot(states, (states**N) * (N - 1) / N, color='#AD1515', linewidth=1.0, label='Expected bid N=%i' % N)
+            # create expected bid for N=2 in a '--' line and in the same color as above but with a lower alpha
+            # plt.plot(states, (states**2) * (2 - 1) / 2, color='#AD1515', linewidth=0.5, alpha=0.5, linestyle='--', label='Expected bid N=2')
             if N - count_zeros == N:
                 pass
-            elif N - count_zeros == 2:
-                plt.plot(states, (states**2) * (2 - 1) / 2, color='#FF7F0E', linewidth=1.0, label='Expected bid N=2')
+            # elif N - count_zeros == 2:
+            #     plt.plot(states, (states**2) * (2 - 1) / 2, color='#AD1515', linewidth=0.5, alpha=0.5, linestyle='--', label='Expected bid N=2')
             else:
-                plt.plot(states, (states**3) * (3 - 1) / 3, color='#7B14AF', linewidth=1.0, label='Expected bid N=3')
+                remaining = N - count_zeros
+                plt.plot(states, (states**remaining) * (remaining - 1) / remaining, color='#7B14AF', linewidth=0.5, alpha=0.5, linestyle='--', label='Expected bid N=%i' % remaining)
         else:
             plt.plot(states, (states**N) * (N - 1) / N, color='#AD1515', linewidth=1.0, label='Expected bid')
     elif auc_type == 'core_selecting':

@@ -9,7 +9,7 @@ import os
 from utils import *
 
 
-def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_revenue=1, gam=1, gif=False, save_interval=10):
+def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_revenue=1, gam=1, gif=False, save_interval=10, tl_flag=False, extra_players=2):
     '''
     Multiagent training loop function for general auctions
     '''
@@ -39,7 +39,8 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
                 # rewards = env.step(observations, actions, r)
                 rewards = env.step(observations, actions, r)
                 maddpg.remember(observations[idx], actions[idx], rewards[idx], others_observations, others_actions)
-                loss = maddpg.learn(idx)
+                # loss = maddpg.learn(idx, flag=tl_flag, num_tiles=extra_players+1)
+                loss = maddpg.learn(idx, flag=tl_flag, num_tiles=extra_players)
                 if loss is not None:
                     batch_loss.append(loss)
 
