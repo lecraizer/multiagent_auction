@@ -18,7 +18,7 @@ def parse_args():
     alert = 0 # alert
     trained = 0 # set to '1' to load models instead of training them
     create_gif = 0 # create gif
-    extra_players = 2 # extra players
+    extra_players = 0 # extra players
     transfer_learning = False # transfer learning
 
     parser.add_argument('-a', '--auction', type=str, help='Auction type')

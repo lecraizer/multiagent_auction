@@ -53,9 +53,9 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
             hist = manualTesting(agents, N, ep, n_episodes, auc_type=auction_type, 
                                      r=r, max_revenue=max_revenue, gam=gam)
             
-            literature_error.append(np.mean(hist))
-            if len(batch_loss) > 0:
-                loss_history.append(np.mean(batch_loss))
+            # literature_error.append(np.mean(hist))
+            # if len(batch_loss) > 0:
+            #     loss_history.append(np.mean(batch_loss))
             
             # save models each n episodes
             for k, agent in enumerate(agents):
@@ -65,8 +65,8 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', r=1, max_re
             # decrease learning rate each n episodes
             decrease_learning_rate(agents, decrease_factor)
 
-            # # plot literature error and loss history
-            plot_errors(literature_error, loss_history, N, auction_type, n_episodes)
+            # # # plot literature error and loss history
+            # plot_errors(literature_error, loss_history, N, auction_type, n_episodes)
 
             if gif:
                 png_file = 'results/' + auction_type + '/N=' + str(N) + '/' + 'ag1_' + str(int(n_episodes/1000)) + 'k_' + 'r' + str(r) + '.png'

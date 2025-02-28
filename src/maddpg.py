@@ -11,7 +11,7 @@ class MADDPG:
     def __init__(self, alpha=0.000025, beta=0.00025, input_dims=1, 
                  tau=0.001, gamma=0.99, BS=64, fc1=64, fc2=64, 
                  n_actions=1, n_agents=2, total_eps=100000, 
-                 noise_std=0.2, tl_flag=False, extra_players=2):
+                 noise_std=0.2, tl_flag=False, extra_players=0):
         self.agents = []
         self.num_agents = n_agents
         for i in range(n_agents):
@@ -57,17 +57,9 @@ class MADDPG:
                 tiled_others_states = np.tile(first_column_others_states, (1, num_tiles))
                 tiled_others_actions = np.tile(first_column_others_actions, (1, num_tiles))
 
-                # print('\n\nOthers states shape:', others_states.shape)
-
-                # print('First column others states shape:', first_column_others_actions.shape)
-                # print('Tiled others states shape:', tiled_others_states.shape)
-
                 # Concatenate the original others_states and others_actions with the tiled columns
                 others_states = np.concatenate([others_states, tiled_others_states], axis=1)
                 others_actions = np.concatenate([others_actions, tiled_others_actions], axis=1)
-
-                # print('New others states shape:', others_states.shape)
-                # quit()
 
         others_states = T.tensor(others_states, dtype=T.float).to(device)
         others_actions = T.tensor(others_actions, dtype=T.float).to(device)

@@ -220,6 +220,9 @@ def get_empirical_revenue(own_value, own_bid, others_bids, auc_type='first_price
     return (own_value - own_bid) * win_prob
 
 
+
+
+# Olhar para essa
 def new_evaluate_agents(agents, n_bids=100, grid_precision=100, auc_type='first_price'):
     '''
     Evaluate the agents by comparing their bids to the optimal bids

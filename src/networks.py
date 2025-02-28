@@ -11,7 +11,7 @@ import torch.optim as optim
 class CriticNetwork(nn.Module):
     def __init__(self, beta, input_dims, fc1_dims, fc2_dims, n_actions, 
                  name, n_agents=2, chkpt_dir='models/critic', 
-                 flag=False, extra=2):
+                 flag=False, extra=0):
         super(CriticNetwork, self).__init__()
         self.checkpoint_file = os.path.join(chkpt_dir,name)
         shape_of_input = n_agents*(input_dims+n_actions)

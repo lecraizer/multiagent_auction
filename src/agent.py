@@ -7,7 +7,7 @@ class Agent(object):
     def __init__(self, alpha, beta, input_dims, tau, gamma=0.99,
                  n_agents=2, n_actions=1, layer1_size=400, layer2_size=300, 
                  batch_size=64, total_eps=100000, noise_std=0.2, 
-                 tl_flag=False, extra_players=2):
+                 tl_flag=False, extra_players=0):
         self.gamma = gamma
         self.tau = tau
         self.batch_size = batch_size
