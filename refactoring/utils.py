@@ -1,21 +1,20 @@
 # This file contains utility functions for the auction environment such as plotting, decreasing learning rate, and manual testing.
 
-import matplotlib.pyplot as plt 
-import numpy as np
-import imageio
-import glob
 import os
-
+import glob
+import imageio
+import numpy as np
+import matplotlib.pyplot as plt 
 
 def plotLearning(scores, filename, x=None, window=5):   
     N = len(scores)
     running_avg = np.empty(N)
     for t in range(N):
         running_avg[t] = np.mean(scores[max(0, t-window):(t+1)])
+
     if x is None:
         x = [i for i in range(N)]
-    if x is None:
-        x = [i for i in range(N)]
+
     plt.ylabel('Score')       
     plt.xlabel('Game')                     
     plt.plot(x, running_avg)
@@ -36,13 +35,13 @@ def decrease_learning_rate(agents, decrease_factor):
     '''
     for k in range(len(agents)):
         for param_group in agents[k].actor.optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * decrease_factor
+            param_group['lr'] *= decrease_factor
         for param_group in agents[k].critic.optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * decrease_factor
+            param_group['lr'] *= decrease_factor
         for param_group in agents[k].target_actor.optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * decrease_factor
+            param_group['lr'] *= decrease_factor
         for param_group in agents[k].target_critic.optimizer.param_groups:
-            param_group['lr'] = param_group['lr'] * decrease_factor
+            param_group['lr'] *= decrease_factor
 
     print('Learning rate: ', param_group['lr'])
     
@@ -62,24 +61,25 @@ def manualTesting(agents, N, episode, n_episodes, auc_type='first_price', r=1, m
         for state in states:
             action = agent.choose_action(state, episode, evaluation=1)[0]  # bid
             actions.append(action)
-            if auc_type == 'first_price':
-                expected_action = state * (N - 1) / (N - 1 + r)
-            elif auc_type == 'second_price':
-                expected_action = state
-            elif auc_type == 'tariff_discount':
-                expected_action = (1 - (state / max_revenue)) * (N - 1) / N
-            elif auc_type == 'common_value':
-                expected_action = state
-            elif auc_type == 'all_pay':
-                expected_action = (state**N) * (N - 1) / N
-            elif auc_type == 'core_selecting':
-                if gam == 1:
+            match auc_type:
+                case 'first_price':
+                    expected_action = state * (N - 1) / (N - 1 + r)
+                case 'second_price':
                     expected_action = state
-                else:
-                    d = (np.exp(-1 + gam) - gam) / (1 - gam)
-                    expected_action = 0 if state <= d else 1 + (np.log(gam + (1 - gam) * state)) / (1 - gam)
-            elif auc_type == 'joint_first_price':
-                expected_action = state * (N - 1) / (N - 1 + r)
+                case 'tariff_discount':
+                    expected_action = (1 - (state / max_revenue)) * (N - 1) / N
+                case 'common_value':
+                    expected_action = state
+                case 'all_pay':
+                    expected_action = (state**N) * (N - 1) / N
+                case 'core_selecting':
+                    if gam == 1:
+                        expected_action = state
+                    else:
+                        d = (np.exp(-1 + gam) - gam) / (1 - gam)
+                        expected_action = 0 if state <= d else 1 + (np.log(gam + (1 - gam) * state)) / (1 - gam)
+                case 'joint_first_price':
+                    expected_action = state * (N - 1) / (N - 1 + r)
             avg_error += abs(action - expected_action)
         avg_error /= len(states)
         print('Avg error agent %i: %.3f' % (k, avg_error))
@@ -100,35 +100,36 @@ def manualTesting(agents, N, episode, n_episodes, auc_type='first_price', r=1, m
 
 
     # Set expected bids based on auction type
-    if auc_type in ['first_price', 'joint_first_price']:
-        plt.plot(states, states * (N - 1) / (N - 1 + r), color='#AD1515', linewidth=1.0, label='Expected bid')
-    elif auc_type == 'second_price':
-        plt.plot(states, states, color='#AD1515', linewidth=1.0, label='Expected bid')
-    elif auc_type == 'tariff_discount':
-        plt.plot(states, (1 - (states / max_revenue)) * (N - 1) / N, color='#AD1515', linewidth=1.0, label='Expected bid')
-    elif auc_type == 'common_value':
-        plt.plot(states, states, color='#AD1515', linewidth=1.0, label='Expected bid')
-    elif auc_type == 'all_pay':
-        if N > 2:
-            plt.plot(states, (states**N) * (N - 1) / N, color='#AD1515', linewidth=1.0, label='Expected bid N=%i' % N)
-            # create expected bid for N=2 in a '--' line and in the same color as above but with a lower alpha
-            # plt.plot(states, (states**2) * (2 - 1) / 2, color='#AD1515', linewidth=0.5, alpha=0.5, linestyle='--', label='Expected bid N=2')
-            if N - count_zeros == N:
-                pass
-            # elif N - count_zeros == 2:
-            #     plt.plot(states, (states**2) * (2 - 1) / 2, color='#AD1515', linewidth=0.5, alpha=0.5, linestyle='--', label='Expected bid N=2')
-            else:
-                remaining = N - count_zeros
-                plt.plot(states, (states**remaining) * (remaining - 1) / remaining, color='#7B14AF', linewidth=0.5, alpha=0.5, linestyle='--', label='Expected bid N=%i' % remaining)
-        else:
-            plt.plot(states, (states**N) * (N - 1) / N, color='#AD1515', linewidth=1.0, label='Expected bid')
-    elif auc_type == 'core_selecting':
-        if gam == 1:
+    match auc_type:
+        case ['first_price', 'joint_first_price']:
+            plt.plot(states, states * (N - 1) / (N - 1 + r), color='#AD1515', linewidth=1.0, label='Expected bid')
+        case 'second_price':
             plt.plot(states, states, color='#AD1515', linewidth=1.0, label='Expected bid')
-        else:
-            d = (np.exp(-1 + gam) - gam) / (1 - gam)
-            plt.plot(states, 0 if state <= d else 1 + (np.log(gam + (1 - gam) * states)) / (1 - gam), 
-                     color='#AD1515', linewidth=1.0, label='Expected bid')
+        case 'tariff_discount':
+            plt.plot(states, (1 - (states / max_revenue)) * (N - 1) / N, color='#AD1515', linewidth=1.0, label='Expected bid')
+        case 'common_value':
+            plt.plot(states, states, color='#AD1515', linewidth=1.0, label='Expected bid')
+        case 'all_pay':
+            if N > 2:
+                plt.plot(states, (states**N) * (N - 1) / N, color='#AD1515', linewidth=1.0, label='Expected bid N=%i' % N)
+                # create expected bid for N=2 in a '--' line and in the same color as above but with a lower alpha
+                # plt.plot(states, (states**2) * (2 - 1) / 2, color='#AD1515', linewidth=0.5, alpha=0.5, linestyle='--', label='Expected bid N=2')
+                if N - count_zeros == N:
+                    pass
+                # elif N - count_zeros == 2:
+                #     plt.plot(states, (states**2) * (2 - 1) / 2, color='#AD1515', linewidth=0.5, alpha=0.5, linestyle='--', label='Expected bid N=2')
+                else:
+                    remaining = N - count_zeros
+                    plt.plot(states, (states**remaining) * (remaining - 1) / remaining, color='#7B14AF', linewidth=0.5, alpha=0.5, linestyle='--', label='Expected bid N=%i' % remaining)
+            else:
+                plt.plot(states, (states**N) * (N - 1) / N, color='#AD1515', linewidth=1.0, label='Expected bid')
+        case 'core_selecting':
+            if gam == 1:
+                plt.plot(states, states, color='#AD1515', linewidth=1.0, label='Expected bid')
+            else:
+                d = (np.exp(-1 + gam) - gam) / (1 - gam)
+                plt.plot(states, 0 if state <= d else 1 + (np.log(gam + (1 - gam) * states)) / (1 - gam), 
+                         color='#AD1515', linewidth=1.0, label='Expected bid')
 
     plt.title(f'{formalize_name(auc_type)} Auction for {N} Players', fontsize=14)
     plt.xlabel('State (Value)', fontsize=14)
@@ -142,8 +143,7 @@ def manualTesting(agents, N, episode, n_episodes, auc_type='first_price', r=1, m
     axes.set_xlim([0, 1])
     axes.set_ylim([0, 1])
 
-    if auc_type == 'tariff_discount':
-        axes.set_xlim([0, max_revenue])
+    if auc_type == 'tariff_discount': axes.set_xlim([0, max_revenue])
 
     # Define the directory path
     dir_path = f'results/{auc_type}/N={N}/'
@@ -157,8 +157,6 @@ def manualTesting(agents, N, episode, n_episodes, auc_type='first_price', r=1, m
         last_avg_error = avg_error
 
     return avg_error
-
-
 
 def plot_errors(literature_error, loss_history, N, auction_type, n_episodes):
     '''
