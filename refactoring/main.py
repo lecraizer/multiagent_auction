@@ -1,12 +1,18 @@
 # Main file to run the training and evaluation of the agents in the different auction environments.
 
-from env import *
 from utils import *
 from train import *
 from evaluation import *
 from maddpg import MADDPG
-from parameters import get_parameters
 from playsound import playsound
+from parameters import get_parameters
+
+from env.first_price import *
+from env.second_price import *
+from env.common_value import *
+from env.core_selecting import *
+from env.tariff_discount import *
+from env.joint_first_price import *
 
 if __name__ == "__main__":
     ### --- Parsing arguments --- ###
@@ -15,23 +21,24 @@ if __name__ == "__main__":
     tl, extra_players, z = get_parameters() # get parameters
 
     ### --- Creating environment --- ###
-    if auction == 'first_price':
-        multiagent_env = MAFirstPriceAuctionEnv(N)
-        # multiagent_env = MAAssymetricFirstPriceAuctionEnv(N)
-    elif auction == 'second_price':
-        multiagent_env = MASecondPriceAuctionEnv(N)
-    elif auction == 'common_value':
-        multiagent_env = MAAlternativeCommonPriceAuctionEnv(N)
-    elif auction == 'tariff_discount':
-        max_revenue = 3
-        multiagent_env = MATariffDiscountEnv(N, max_revenue=max_revenue)
-    elif auction == 'all_pay':
-        multiagent_env = MAAllPayAuctionEnv(N)
-    elif auction == 'core_selecting':
-        N = 3
-        multiagent_env = MACoreSelectingAuctionEnv()
-    elif auction == 'joint_first_price':
-        multiagent_env = MAJointFirstPriceAuctionEnv(N)
+    match auction:
+        case 'first_price':
+            multiagent_env = MAFirstPriceAuctionEnv(N)
+            # multiagent_env = MAAssymetricFirstPriceAuctionEnv(N)
+        case 'second_price':
+            multiagent_env = MASecondPriceAuctionEnv(N)
+        case 'common_value':
+            multiagent_env = MAAlternativeCommonPriceAuctionEnv(N)
+        case 'tariff_discount':
+            max_revenue = 3
+            multiagent_env = MATariffDiscountEnv(N, max_revenue=max_revenue)
+        case 'all_pay':
+            multiagent_env = MAAllPayAuctionEnv(N)
+        case 'core_selecting':
+            N = 3
+            multiagent_env = MACoreSelectingAuctionEnv()
+        case 'joint_first_price':
+            multiagent_env = MAJointFirstPriceAuctionEnv(N)
 
     ### --- Creating agents --- ###    
     maddpg = MADDPG(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001,
