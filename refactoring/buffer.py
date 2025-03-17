@@ -38,7 +38,7 @@ class ReplayBuffer(object):
         max_mem = min(self.mem_cntr, self.mem_size)
         batch = np.random.choice(max_mem, batch_size)
     
-        return self.get_buffer(batch)
+        return self.get_values(batch)
     
     def sample_last_buffer(self, batch_size):
         '''
@@ -46,4 +46,4 @@ class ReplayBuffer(object):
         '''
         if self.mem_cntr < batch_size: batch_size = self.mem_cntr 
 
-        return self.get_buffer(range(self.mem_cntr-batch_size, self.mem_cntr))
+        return self.get_values(range(self.mem_cntr-batch_size, self.mem_cntr))
