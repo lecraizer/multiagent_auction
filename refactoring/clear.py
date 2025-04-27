@@ -1,9 +1,7 @@
-# Script to clear up saved models and results after test runs
-
 import os
 import argparse
 
-def clear_data():
+def clear_data() -> None:
     '''
     Clears data from previous runs.
 
@@ -20,7 +18,7 @@ def clear_data():
         os.system('rm -rf models/critic/' + '*')
     print("\nData cleared successfully.")
 
-def main():
+def main() -> None:
     '''
     Main function to clear data.
 

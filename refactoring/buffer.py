@@ -1,12 +1,10 @@
-# Module for setting up the replay buffer for the multi-agent DDPG algorithm
-
 import numpy as np
 
 class ReplayBuffer(object):
     """
     Implements a replay buffer for storing agent interactions with the environment.
     """
-    def __init__(self, max_size, input_shape, n_actions, num_agents=2):
+    def __init__(self, max_size: int, input_shape: int, n_actions: int, num_agents: int = 2) -> None:
         """
         Initializes the buffer.
 
@@ -26,12 +24,12 @@ class ReplayBuffer(object):
         self.others_states = np.zeros((self.mem_size, input_shape*(num_agents-1)))
         self.others_actions = np.zeros((self.mem_size, n_actions*(num_agents-1)))
 
-    def get_values(self, idx):
+    def get_values(self, idx: int | list) -> tuple:
         """
         Retrieves the stored values (states, actions, rewards, others_states, others_actions) 
         from memory at the specified indice.
 
-        Parameters:
+        Args:
             idx (int or list): The indices of the values to retrieve.
 
         Returns:
@@ -46,11 +44,12 @@ class ReplayBuffer(object):
 
         return states, actions, rewards, others_states, others_actions
 
-    def store_transition(self, state, action, reward, others_states, others_actions):
+    def store_transition(self, state: np.ndarray, action: np.ndarray, reward: float, others_states: np.ndarray, 
+                         others_actions: np.ndarray) -> None:
         """
         Stores state, action, reward, others_states and others_actions in the memory buffer.
 
-        Parameters:
+        Args:
             state (np.ndarray): The current state.
             action (np.ndarray): The action taken in the current state.
             reward (float): The reward received after taking the action.
@@ -68,11 +67,11 @@ class ReplayBuffer(object):
         self.others_actions[index] = others_actions
         self.mem_cntr += 1
 
-    def sample_buffer(self, batch_size):
+    def sample_buffer(self, batch_size: int) -> tuple:
         """
         Samples a random subset of the memory buffer.
 
-        Parameters:
+        Args:
             batch_size (int): The number of elements to sample.
 
         Returns:
@@ -83,11 +82,11 @@ class ReplayBuffer(object):
     
         return self.get_values(batch)
     
-    def sample_last_buffer(self, batch_size):
+    def sample_last_buffer(self, batch_size: int) -> tuple:
         """
         Samples the last batch_size elements from the buffer.
 
-        Parameters:
+        Args:
             batch_size (int): The number of elements to sample.
 
         Returns:
