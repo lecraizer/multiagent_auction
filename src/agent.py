@@ -3,7 +3,7 @@ import numpy as np
 import torch as T
 from networks import ActorNetwork, CriticNetwork
 
-class Agent(object):
+class Agent:
     def __init__(self, alpha, beta, input_dims, tau, gamma=0.99,
                  n_agents=2, n_actions=1, layer1_size=400, layer2_size=300, 
                  batch_size=64, total_eps=100000, noise_std=0.2, 
@@ -13,80 +13,45 @@ class Agent(object):
         self.batch_size = batch_size
         self.total_episodes = total_eps
         self.noise_std = noise_std
-        self.actor = ActorNetwork(alpha, input_dims, layer1_size,
-                                  layer2_size, n_actions=n_actions,
-                                  name='actor', n_agents=n_agents)
 
-        self.critic = CriticNetwork(beta, input_dims, layer1_size,
-                                    layer2_size, n_actions=n_actions,
-                                    name='critic', n_agents=n_agents,
-                                    flag=tl_flag, extra=extra_players)
+        self.actor = self._build_actor(alpha, input_dims, layer1_size, layer2_size, n_actions, n_agents, 'actor')
+        self.critic = self._build_critic(beta, input_dims, layer1_size, layer2_size, n_actions, n_agents, 'critic', tl_flag, extra_players)
 
-        self.target_actor = ActorNetwork(alpha, input_dims, layer1_size,
-                                         layer2_size, n_actions=n_actions,
-                                         name='target_actor', n_agents=n_agents)
-        self.target_critic = CriticNetwork(beta, input_dims, layer1_size,
-                                           layer2_size, n_actions=n_actions,
-                                           name='target_critic', n_agents=n_agents,
-                                           flag=tl_flag, extra=extra_players)
+        self.target_actor = self._build_actor(alpha, input_dims, layer1_size, layer2_size, n_actions, n_agents, 'target_actor')
+        self.target_critic = self._build_critic(beta, input_dims, layer1_size, layer2_size, n_actions, n_agents, 'target_critic', tl_flag, extra_players)
 
         self.update_network_parameters(tau=1)
-    
-        # from torchviz import make_dot 
-        # dot = make_dot(self.actor(T.randn(400, 1)), params=dict(self.actor.named_parameters()))
-        # dot.format = 'png'
-        # dot.render('actor', format='png')
 
+    def _build_actor(self, alpha, input_dims, fc1, fc2, n_actions, n_agents, name):
+        return ActorNetwork(alpha, input_dims, fc1, fc2, n_actions, name, n_agents)
+
+    def _build_critic(self, beta, input_dims, fc1, fc2, n_actions, n_agents, name, tl_flag, extra):
+        return CriticNetwork(beta, input_dims, fc1, fc2, n_actions, name, n_agents, flag=tl_flag, extra=extra)
 
     def choose_action(self, observation, episode, evaluation=False):
         self.actor.eval()
-        observation = T.tensor([observation], dtype=T.float).to(self.actor.device)
-        mu = self.actor.forward(observation).to(self.actor.device)
-        
-        if evaluation:
-            mu_prime = mu
-        else:
+        obs_tensor = T.tensor([observation], dtype=T.float).to(self.actor.device)
+        action = self.actor.forward(obs_tensor).to(self.actor.device)
+
+        if not evaluation:
             noise = T.tensor(np.random.normal(0, self.noise_std), dtype=T.float).to(self.actor.device)
-            mu_prime = mu + (noise*(1-(episode/self.total_episodes)))
-            mu_prime = mu_prime.clamp(0, 1)
-
-            # # agent has chance = exploration_rate to play randomly 
-            # exploration_rate = 1-(episode/self.total_episodes)
-            # if random.random() < exploration_rate:
-            #     mu_prime = T.tensor([np.random.uniform(0, 1)], dtype=T.float).to(self.actor.device)
-            # else:
-            #     mu_prime = mu
-
-            # mu_prime = mu_prime.clamp(0, 1)
-        
-            # mu_prime = mu.clamp(0, 1)
+            decay = 1 - (episode / self.total_episodes)
+            action += noise * decay
+            action = action.clamp(0, 1)
 
         self.actor.train()
-        return mu_prime.cpu().detach().numpy()
+        return action.cpu().detach().numpy()
 
     def update_network_parameters(self, tau=None):
         if tau is None:
             tau = self.tau
 
-        actor_params = self.actor.named_parameters()
-        critic_params = self.critic.named_parameters()
-        target_actor_params = self.target_actor.named_parameters()
-        target_critic_params = self.target_critic.named_parameters()
+        for target_param, param in zip(self.target_critic.parameters(), self.critic.parameters()):
+            target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
 
-        critic_state_dict = dict(critic_params)
-        actor_state_dict = dict(actor_params)
-        target_critic_dict = dict(target_critic_params)
-        target_actor_dict = dict(target_actor_params)
+        for target_param, param in zip(self.target_actor.parameters(), self.actor.parameters()):
+            target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
 
-        for name in critic_state_dict:
-            critic_state_dict[name] = tau*critic_state_dict[name].clone() + (1-tau)*target_critic_dict[name].clone()
-
-        self.target_critic.load_state_dict(critic_state_dict)
-
-        for name in actor_state_dict:
-            actor_state_dict[name] = tau*actor_state_dict[name].clone() + (1-tau)*target_actor_dict[name].clone()
-        self.target_actor.load_state_dict(actor_state_dict)
-        
     def save_models(self, name):
         self.actor.save_checkpoint(name)
         self.target_actor.save_checkpoint(name)
@@ -98,19 +63,3 @@ class Agent(object):
         self.target_actor.load_checkpoint(name)
         self.critic.load_checkpoint(name)
         self.target_critic.load_checkpoint(name)
-
-    def check_actor_params(self):
-        current_actor_params = self.actor.named_parameters()
-        current_actor_dict = dict(current_actor_params)
-        original_actor_dict = dict(self.original_actor.named_parameters())
-        original_critic_dict = dict(self.original_critic.named_parameters())
-        current_critic_params = self.critic.named_parameters()
-        current_critic_dict = dict(current_critic_params)
-        print('Checking Actor parameters')
-
-        for param in current_actor_dict:
-            print(param, T.equal(original_actor_dict[param], current_actor_dict[param]))
-        print('Checking critic parameters')
-        for param in current_critic_dict:
-            print(param, T.equal(original_critic_dict[param], current_critic_dict[param]))
-        input()
