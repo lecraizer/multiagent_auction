@@ -1,6 +1,6 @@
 # Entry point for running auction experiments
 
-from auction_experiment import AuctionSimulationRunner
+from experiment import AuctionSimulationRunner
 from argparser import parse_args
 
 if __name__ == "__main__":
