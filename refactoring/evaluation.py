@@ -1,11 +1,5 @@
 import numpy as np
 
-def calculate_win_probability(own_bid, others_bids):
-    win_prob = 1
-    for bids in others_bids:
-        win_prob *= sum(own_bid > b for b in bids) / len(bids)
-    return win_prob
-
 def get_empirical_revenue(own_value, own_bid, others_bids, auc_type='first_price'):
     tuples_list = list(zip(*others_bids))
     max_bids = [max(t) for t in tuples_list]
@@ -26,7 +20,7 @@ def get_all_bids_except(agents, k, n_bids):
             others_bids.append(bids)
     return others_bids
     
-def new_evaluate_agents(agents, n_bids=100, grid_precision=100, auc_type='first_price'):
+def evaluate_agents(agents, n_bids=100, grid_precision=100, auc_type='first_price'):
     sums_of_diffs = []
     for k in range(len(agents)):
         others_bids = get_all_bids_except(agents, k, n_bids)
