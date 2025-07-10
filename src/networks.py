@@ -13,73 +13,74 @@ class CriticNetwork(nn.Module):
                  name, n_agents=2, chkpt_dir='models/critic', 
                  flag=False, extra=0):
         super(CriticNetwork, self).__init__()
-        self.checkpoint_file = os.path.join(chkpt_dir,name)
-        shape_of_input = n_agents*(input_dims+n_actions)
+
+        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.checkpoint_file = os.path.join(chkpt_dir, name)
+
+        total_inputs = n_agents * (input_dims + n_actions)
         if flag:
-            shape_of_input = (n_agents+extra)*(input_dims+n_actions)
-        self.fc1 = nn.Linear(shape_of_input, fc1_dims)
+            total_inputs = (n_agents + extra) * (input_dims + n_actions)
+
+        self.fc1 = nn.Linear(total_inputs, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.q = nn.Linear(fc2_dims, 1)
+
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
 
     def forward(self, state, action, others_states, others_actions):
-        conc = T.cat([state, action, others_states, others_actions], dim=1)
-        x = F.relu(self.fc1(conc))
+        concat = T.cat([state, action, others_states, others_actions], dim=1)
+        x = F.relu(self.fc1(concat))
         x = F.relu(self.fc2(x))
-        q = self.q(x)
-        return q
+        q_value = self.q(x)
+        return q_value
 
     def save_checkpoint(self, name):
-        # print('... Saving critic model for ' + name + ' ...')
-        T.save(self.state_dict(), self.checkpoint_file + '_' + name)
+        T.save(self.state_dict(), f'{self.checkpoint_file}_{name}')
 
     def load_checkpoint(self, name):
-        print('... Loading critic model for ' + name + ' ...')
-        self.load_state_dict(T.load(self.checkpoint_file + '_' + name, map_location=T.device('cuda:0' if T.cuda.is_available() else 'cpu')))
+        print(f'... Loading critic model for {name} ...')
+        self.load_state_dict(
+            T.load(f'{self.checkpoint_file}_{name}', map_location=self.device)
+        )
 
 
 class ActorNetwork(nn.Module):
     def __init__(self, alpha, input_dims, fc1_dims, fc2_dims, n_actions, 
                  name, n_agents=2, chkpt_dir='models/actor'):
         super(ActorNetwork, self).__init__()
-        self.checkpoint_file = os.path.join(chkpt_dir,name)
 
-        self.fc1 = nn.Linear(input_dims, fc1_dims)        
+        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.checkpoint_file = os.path.join(chkpt_dir, name)
+
+        self.fc1 = nn.Linear(input_dims, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.mu = nn.Linear(fc2_dims, n_actions)
-        self.n_agents = n_agents
 
-        # Initialization settings
-        f1 = 1./np.sqrt(self.fc1.weight.data.size()[0])
-        T.nn.init.uniform_(self.fc1.weight.data, -f1, f1)
-        T.nn.init.uniform_(self.fc1.bias.data, -f1, f1)
-
-        f2 = 1./np.sqrt(self.fc2.weight.data.size()[0])
-        T.nn.init.uniform_(self.fc2.weight.data, -f2, f2)
-        T.nn.init.uniform_(self.fc2.bias.data, -f2, f2)
-
-        f3 = 0.003
-        T.nn.init.uniform_(self.mu.weight.data, -f3, f3)
-        T.nn.init.uniform_(self.mu.bias.data, -f3, f3)
+        self._init_layer(self.fc1)
+        self._init_layer(self.fc2)
+        self._init_layer(self.mu, scale=0.003)
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
 
+    def _init_layer(self, layer, scale=1.0):
+        """Initialize weights uniformly with a given scale."""
+        fan_in = layer.weight.data.size()[0]
+        limit = scale / np.sqrt(fan_in)
+        T.nn.init.uniform_(layer.weight.data, -limit, limit)
+        T.nn.init.uniform_(layer.bias.data, -limit, limit)
+
     def forward(self, state):
-        x = self.fc1(state)
-        x = F.relu(x)
-        x = self.fc2(x)
-        x = T.sigmoid(self.mu(x))
-        # x = T.sigmoid(self.mu(x)) * 2 # uncomment this line for auctions where the action space is [0,2]
-        return x
+        x = F.relu(self.fc1(state))
+        x = F.relu(self.fc2(x))
+        return T.sigmoid(self.mu(x))
 
     def save_checkpoint(self, name):
-        # print('... Saving actor model for ' + name + ' ...')
-        T.save(self.state_dict(), self.checkpoint_file + '_' + name)
+        T.save(self.state_dict(), f'{self.checkpoint_file}_{name}')
 
     def load_checkpoint(self, name):
-        print('... Loading actor model for ' + name + ' ...')
-        self.load_state_dict(T.load(self.checkpoint_file + '_' + name, map_location=T.device('cuda:0' if T.cuda.is_available() else 'cpu')))
+        print(f'... Loading actor model for {name} ...')
+        self.load_state_dict(
+            T.load(f'{self.checkpoint_file}_{name}', map_location=self.device)
+        )
