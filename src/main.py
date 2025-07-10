@@ -53,7 +53,6 @@ if __name__ == "__main__":
     # --- Transfer Learning ---
     else:
         if tl:
-            # === Do not touch TL logic as per user request ===
             new_N = N
             for i in range(extra_players-1):
                 print('Transfer learning...')

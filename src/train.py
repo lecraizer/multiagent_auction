@@ -47,9 +47,6 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price',
     grid_N = 10
     loss_history, literature_error = [], []
 
-    if tl_flag:
-        n_episodes = int(n_episodes / 2)
-
     for ep in range(n_episodes):
         observations = env.reset()
         original_actions = [agents[i].choose_action(observations[i], ep)[0] for i in range(N)]
@@ -72,10 +69,9 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price',
                     batch_loss.append(loss)
                     
         if ep % save_interval == 0:
-            n_episodes_for_saving = int(n_episodes * (2 if tl_flag else 1))
             log_episode(ep, observations, original_actions, original_rewards)
 
-            hist = manualTesting(agents, N, ep, n_episodes_for_saving, auc_type=auction_type, r=r,
+            hist = manualTesting(agents, N, ep, n_episodes, auc_type=auction_type, r=r,
                                  max_revenue=max_revenue, gam=gam)
             literature_error.append(np.mean(hist))
             if batch_loss:
