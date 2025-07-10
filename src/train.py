@@ -77,7 +77,7 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price',
             if batch_loss:
                 loss_history.append(np.mean(batch_loss))
 
-            save_models_and_update(agents, auction_type, N, r, n_episodes_for_saving, ep,
+            save_models_and_update(agents, auction_type, N, r, n_episodes, ep,
                                    loss_history, literature_error, gif, decrease_factor=0.99)
 
     if gif:
