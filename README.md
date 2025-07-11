@@ -26,7 +26,10 @@ pip install -r requirements.txt
 #### To execute the program, just type the following line on the root directory 
 
 ```bash
-python src/main.py -a <type of auction> -b <batch size> -d <load trained models> -e <number of episodes> -g <gif maker> -n <number of players> -p <ponderated average size> -r <aversion coefficient> -s <save test results in a plot> -t <use alert .mp3 file> -z <number of executions> 
+python src/run.py -a <type of auction> -d <load trained models> -e <number of episodes> -n <number of players> -r <aversion coefficient> -t <use transfer learning> -x <number of extra players>
+```
+
+where the arguments are:
 ```
 where the arguments may be passed after the __main.py__ call, as described above, otherwise the default parameters will be selected.
 

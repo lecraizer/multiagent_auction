@@ -3,7 +3,10 @@
 from experiment import AuctionSimulationRunner
 from argparser import parse_args
 
-if __name__ == "__main__":
+def main():
     args = parse_args()
     runner = AuctionSimulationRunner(*args)
     runner.execute()
+
+if __name__ == '__main__':
+    main()
