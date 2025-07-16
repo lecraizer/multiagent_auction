@@ -65,7 +65,7 @@ def manualTesting(agents, N, episode, n_episodes, auc_type='first_price', r=1, m
     avg_error /= N
 
     # Expected bids curve
-    if auc_type in ['first_price', 'joint_first_price']:
+    if auc_type == 'first_price':
         plt.plot(states, [s * (N - 1) / (N - 1 + r) for s in states], color='#AD1515', linewidth=1.0, label='Expected bid')
     elif auc_type == 'second_price':
         plt.plot(states, states, color='#AD1515', linewidth=1.0, label='Expected bid')

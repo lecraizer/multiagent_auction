@@ -1,0 +1,9 @@
+{
+  "batch": 64,
+  "noise": 0.2,
+  "ponderated": 100,
+  "save": false,
+  "gif": false,
+  "alert": true,
+  "executions": 1
+}
