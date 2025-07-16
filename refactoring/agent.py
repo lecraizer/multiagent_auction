@@ -45,6 +45,7 @@ class Agent(object):
         self.batch_size = batch_size
         self.total_episodes = total_eps
         self.noise_std = noise_std
+
         self.actor = ActorNetwork(alpha, input_dims, layer1_size, layer2_size, n_actions=n_actions, 
                                   name='actor', n_agents=n_agents)
 
@@ -58,21 +59,6 @@ class Agent(object):
                                            name='target_critic', n_agents=n_agents, flag=tl_flag, extra=extra_players)
 
         self.update_network_parameters(tau=1)
-
-    def get_networks_dicts(self):
-        """
-        Get state dictionaries for all networks.
-        
-        Returns:
-            tuple: Four dictionaries containing the named parameters of the critic,
-                  actor, target critic, and target actor networks respectively.
-        """
-        critic_state_dict = dict(self.critic.named_parameters())
-        actor_state_dict = dict(self.actor.named_parameters())
-        target_critic_dict = dict(self.target_critic.named_parameters())
-        target_actor_dict = dict(self.target_actor.named_parameters())
-
-        return critic_state_dict, actor_state_dict, target_critic_dict, target_actor_dict
     
     def choose_action(self, observation, episode, evaluation = False):
         """
@@ -87,18 +73,17 @@ class Agent(object):
             numpy.ndarray: The selected action.
         """
         self.actor.eval()
-        observation = T.tensor([observation], dtype=T.float).to(self.actor.device)
-        mu = self.actor.forward(observation).to(self.actor.device)
+        obs_tensor = T.tensor([observation], dtype=T.float).to(self.actor.device)
+        action = self.actor.forward(obs_tensor).to(self.actor.device)
         
-        if evaluation:
-            mu_prime = mu
-        else:
+        if not evaluation:
             noise = T.tensor(np.random.normal(0, self.noise_std), dtype=T.float).to(self.actor.device)
-            mu_prime = mu + (noise*(1-(episode/self.total_episodes)))
-            mu_prime = mu_prime.clamp(0, 1)
+            decay = 1 - (episode / self.total_episodes)
+            action  += noise * decay
+            action  = action.clamp(0, 1)
 
         self.actor.train()
-        return mu_prime.cpu().detach().numpy()
+        return action .cpu().detach().numpy()
 
     def update_network_parameters(self, tau=None):
         """
@@ -109,15 +94,11 @@ class Agent(object):
                                   instance's tau value. Defaults is None.
         """
         if tau is None: tau = self.tau
-        critic_state_dict, actor_state_dict, target_critic_dict, target_actor_dict = self.get_networks_dicts()
+        for target_param, param in zip(self.target_critic.parameters(), self.critic.parameters()):
+            target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
 
-        for name in critic_state_dict:
-            critic_state_dict[name] = tau*critic_state_dict[name].clone() + (1-tau)*target_critic_dict[name].clone()
-        for name in actor_state_dict:
-            actor_state_dict[name] = tau*actor_state_dict[name].clone() + (1-tau)*target_actor_dict[name].clone()
-
-        self.target_critic.load_state_dict(critic_state_dict)
-        self.target_actor.load_state_dict(actor_state_dict)
+        for target_param, param in zip(self.target_actor.parameters(), self.actor.parameters()):
+            target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
         
     def save_models(self, name):
         """

@@ -6,13 +6,13 @@ class ReplayBuffer(object):
     """
     def __init__(self, max_size: int, input_shape: int, n_actions: int, num_agents: int = 2) -> None:
         """
-        Initializes the buffer.
+        Initialize the replay buffer with fixed-size memory for each component.
 
         Args:
-            max_size (int): The maximum size of the memory buffer.
-            input_shape (int): The size of the input states.
-            n_actions (int): The number of possible actions for the agent.
-            num_agents (int, optional): The number of agents interacting in the environment (default is 2).
+            max_size (int): Maximum number of transitions to store.
+            input_shape (int): Dimension of the state vector.
+            n_actions (int): Dimension of the action vector.
+            num_agents (int, optional): Total number of agents in the environment (default is 2).
         """
         self.mem_size = max_size
         self.mem_cntr = 0
@@ -50,11 +50,11 @@ class ReplayBuffer(object):
         Stores state, action, reward, others_states and others_actions in the memory buffer.
 
         Args:
-            state (np.ndarray): The current state.
-            action (np.ndarray): The action taken in the current state.
-            reward (float): The reward received after taking the action.
-            others_states (np.ndarray): The states of other entities in the environment.
-            others_actions (np.ndarray): The actions of other entities in the environment.
+            state (np.ndarray): Current agent's observation.
+            action (np.ndarray): Current agent's action.
+            reward (float): Reward received after taking the action.
+            others_states (np.ndarray): Concatenated observations of other agents.
+            others_actions (np.ndarray): Concatenated actions of other agents.
 
         The memory counter is updated after storing the transition.
         """
@@ -72,7 +72,7 @@ class ReplayBuffer(object):
         Samples a random subset of the memory buffer.
 
         Args:
-            batch_size (int): The number of elements to sample.
+            batch_size (int): Number of transitions to sample.
 
         Returns:
             tuple: The set of values sampled, which is limited by mem_cntr or mem_size.
@@ -87,7 +87,7 @@ class ReplayBuffer(object):
         Samples the last batch_size elements from the buffer.
 
         Args:
-            batch_size (int): The number of elements to sample.
+            batch_size (int): Number of transitions to retrieve.
 
         Returns:
             tuple: The last batch_size values (states, actions, rewards, other agents' states, other agents' actions).

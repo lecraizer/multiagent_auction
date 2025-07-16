@@ -18,13 +18,8 @@ def plotLearning(auction_scores: list, filename: str, labels: list = None, windo
         None: The function saves the plot as an image file and does not return any value.
     '''
     n_games = len(auction_scores)
-    running_avg = np.empty(n_games)
-
-    for t in range(n_games):
-        running_avg[t] = np.mean(auction_scores[max(0, t-window):(t+1)])
-
-    if labels is None: labels = [i for i in range(n_games)]
-
+    running_avg = np.array([np.mean(auction_scores[max(0, t-window):(t+1)]) for t in range(n_games)])
+    labels = list(range(n_games)) if labels is None else labels
     plt.ylabel('Score')       
     plt.xlabel('Game')                     
     plt.plot(labels, running_avg)
@@ -40,8 +35,7 @@ def formalize_name(auc_type: str) -> str:
     Returns:
         auc_type (str): The formatted auction type name.
     '''
-    auc_type = auc_type.replace('_', ' ').title()
-    return auc_type
+    return auc_type.replace('_', ' ').title()
 
 def decrease_learning_rate(agents: list, decrease_factor: float) -> None:
     '''
@@ -54,23 +48,21 @@ def decrease_learning_rate(agents: list, decrease_factor: float) -> None:
     Returns:
         None: The function directly modifies the learning rate of the agent models.
     '''
-    for k in range(len(agents)):
-        group = (agents[k].actor.optimizer.param_groups, agents[k].critic.optimizer.param_groups, 
-                 agents[k].target_actor.optimizer.param_groups, agents[k].target_critic.optimizer.param_groups)
-        for i in group:
-            for param_group in i:
-                param_group['lr'] *= decrease_factor
+    for agent in agents:
+        for opt in [agent.actor.optimizer, agent.critic.optimizer, 
+                    agent.target_actor.optimizer, agent.target_critic.optimizer]:
+            for group in opt.param_groups:
+                group['lr'] *= decrease_factor
+    print('Learning rate: ', group['lr'])
 
-    print('Learning rate: ', param_group['lr'])
-
-def calculate_expected_action(N: int, auc_type: str, state: float, r: float, max_revenue: float, gam: float) -> float:
+def calculate_expected_action(N: int, auc_type: str, states: np.array, r: float, max_revenue: float, gam: float) -> float:
     '''
     Calculates the expected action of agent.
 
     Args:
         N (int): The total number of agents.
         auc_type (str): The type of auction.
-        state (float): The current state.
+        states (float): The current state.
         r (float): A parameter used in specific auction types.
         max_revenue (float): The maximum possible revenue.
         gam (float): .
@@ -78,27 +70,20 @@ def calculate_expected_action(N: int, auc_type: str, state: float, r: float, max
     Returns:
         float: The expected action.
     '''
-    match auc_type:
-        case 'first_price':
-            expected_action = state * (N - 1) / (N - 1 + r)
-        case 'second_price':
-            expected_action = state
-        case 'tariff_discount':
-            expected_action = (1 - (state / max_revenue)) * (N - 1) / N
-        case 'common_value':
-            expected_action = state
-        case 'all_pay':
-            expected_action = (state**N) * (N - 1) / N
-        case 'core_selecting':
-            if gam == 1:
-                expected_action = state
-            else:
-                d = (np.exp(-1 + gam) - gam) / (1 - gam)
-                expected_action = 0 if state <= d else 1 + (np.log(gam + (1 - gam) * state)) / (1 - gam)
-        case 'joint_first_price':
-            expected_action = state * (N - 1) / (N - 1 + r)
+    if auc_type == 'first_price':
+        expected = [s * (N - 1) / (N - 1 + r) for s in states]
+    elif auc_type == 'second_price':
+        expected = states
+    elif auc_type == 'tariff_discount':
+        expected = [(1 - (s / max_revenue)) * (N - 1) / N for s in states]
+    elif auc_type == 'common_value':
+        expected = states
+    elif auc_type == 'all_pay':
+        expected = [(s**N) * (N - 1) / N for s in states]
+    else:
+        expected = [0 for _ in states]
 
-    return expected_action
+    return expected
 
 def calculate_agents_actions(agents: list, N: int, episode: int, auc_type: str, r: float, max_revenue: float, gam: float) -> tuple:
     '''
@@ -120,24 +105,19 @@ def calculate_agents_actions(agents: list, N: int, episode: int, auc_type: str, 
             - agents_actions (list): A list of action lists, one per agent.
             - avg_error (float): The average absolute error between the actions and theoretical bids.
     '''
-    states = np.linspace(0, 1, 100)
-    if auc_type == 'tariff_discount': states = np.linspace(0, max_revenue, 100)
-
-    agents_actions = []
+    states = np.linspace(0, max_revenue if auc_type == 'tariff_discount' else 1, 100)
     avg_error = 0
+    agents_actions = []
+
     for k, agent in enumerate(agents):
-        actions = [] 
-        for state in states:
-            action = agent.choose_action(state, episode, evaluation=1)[0]  # bid
-            actions.append(action)
-            expected_action = calculate_expected_action(N, auc_type, state, r, max_revenue, gam)
-            avg_error += abs(action - expected_action)
-        avg_error /= len(states)
-        print('Avg error agent %i: %.3f' % (k, avg_error))
-
+        actions = [agent.choose_action(state, episode, evaluation=1)[0] for state in states] 
         agents_actions.append(actions)
+        expected_action = calculate_expected_action(N, auc_type, states, r, max_revenue, gam)
+        agent_error = np.mean(np.abs(np.array(actions) - np.array(expected_action)))
+        avg_error += agent_error
+        print(f'Avg error agent {k}: {agent_error:.3f}')
 
-    return states, agents_actions, avg_error
+    return states, agents_actions, avg_error/N
 
 def plot_agents_actions(states: np.ndarray, agents_actions: list) -> None:
     '''
@@ -149,9 +129,9 @@ def plot_agents_actions(states: np.ndarray, agents_actions: list) -> None:
         agents_actions (list): A list of lists where each sublist contains the bids of an agent.
     '''
     colors = ['#1C1B1B', '#184DB8', '#39973E', '#938D8D', '#FF7F0E', '#F15A60', '#7D3C98', '#2CA02C', '#17BECF', '#D62728']
-    for i, agent_actions in enumerate(agents_actions):
-        small_marker = np.all(np.abs(agent_actions) <= 0.01)
-        plt.scatter(states, agent_actions, s=8 if small_marker else 2,
+    for i, actions in enumerate(agents_actions):
+        marker_size = 8 if np.all(np.abs(actions) <= 0.01) else 2
+        plt.scatter(states, actions, s=marker_size,
                     label=f'Bid agent {i + 1}', color=colors[i % len(colors)], marker='*')
         
 def configure_plot_layout(auc_type: str, N: int) -> plt.axes:
@@ -205,18 +185,11 @@ def plot_expected_bid_curve(states: np.ndarray, auc_type: str, N: int, r: float,
             _plot(states)
         case 'all_pay':
             _plot((states**N) * (N - 1) / N, label_suffix=f' N={N}')
-            if N > 2 and count_zeros != 0:
-                remaining = N - count_zeros
-                y_alt = (states**remaining) * (remaining - 1) / remaining
-                _plot(y_alt, label_suffix=f' N={remaining}', color='#7B14AF', linestyle='--', linewidth=0.5, alpha=0.5)
-        case 'core_selecting':
-            if gam == 1:
-                _plot(states)
-            else:
-                d = (np.exp(-1 + gam) - gam) / (1 - gam)
-                y_vals = np.where(states <= d, 0, 1 + (np.log(gam + (1 - gam) * states)) / (1 - gam))
-                _plot(y_vals)
-
+            active_agents = N - count_zeros
+            if 0 < active_agents < N:
+                alt_exp = [(s**active_agents) * (active_agents - 1) / active_agents for s in states]
+                _plot(alt_exp, label_suffix=f' N={active_agents}', color='#7B14AF', linestyle='--', linewidth=0.5, alpha=0.5)
+            
 def manualTesting(agents: list, N: int, episode: int, n_episodes: int, auc_type: str = 'first_price', r: float = 1, 
                   max_revenue: float = 1, eps: float = 0.1, vl: float = 0, vh: float = 1, gam: float = 1) -> float:
     '''
@@ -248,39 +221,18 @@ def manualTesting(agents: list, N: int, episode: int, n_episodes: int, auc_type:
     for i in agents_actions:
         if np.all(np.abs(i) <= 0.01): count_zeros += 1
 
-    # Set expected bids based on auction type
     plot_expected_bid_curve(states, auc_type, N, r, max_revenue, gam, count_zeros)
     axes = configure_plot_layout(auc_type, N)
     if auc_type == 'tariff_discount': axes.set_xlim([0, max_revenue])
 
-    dir_path = f'results/{auc_type}/N={N}/' # Define the directory path
+    dir_path = f'results/{auc_type}/N={N}/'
     os.makedirs(dir_path, exist_ok=True)
-    plt.savefig(f'{dir_path}{int(n_episodes/1000)}k_r{r}.png') # Save the plot with a formatted filename
+    r_str = f"{int(r)}" if r == int(r) else f"{r}".replace('.', '_')
+    fname = f"{int(n_episodes / 1000)}k_r{r_str}.png"
 
-    if not 'last_avg_error' in locals() or avg_error <= last_avg_error:
-        plt.savefig(f'{dir_path}{int(n_episodes/1000)}k_r{r}.png')
-        last_avg_error = avg_error
+    plt.savefig(f"{dir_path}{fname}")
 
     return avg_error
-
-def save_images(type_error: str, N: int, auction_type: str, n_episodes: int) -> None:
-    '''
-    Saves the current plot as an image file in a specified directory, using the provided parameters to generate the file path.
-
-    Args:
-        type_error (str): The type of error (literature_error or loss_history).
-        N (int): The number of agents (used in saving the plot).
-        auction_type (str): The type of auction, used in the directory structure.
-        n_episodes (int): The total number of episodes, used to name the file (in thousands).
-
-    Returns:
-        None: The function saves the plot as an image file.
-    '''
-    try:
-        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/' + type_error + str(int(n_episodes/1000)) + 'k.png')
-    except:
-        os.mkdir('results/' + auction_type + '/N=' + str(N))
-        plt.savefig('results/' + auction_type + '/N=' + str(N) + '/' + type_error + str(int(n_episodes/1000)) + 'k.png')
 
 def plot_errors(literature_error: list, loss_history: list, N: int, auction_type: str, n_episodes: int) -> None:
     '''
@@ -296,38 +248,37 @@ def plot_errors(literature_error: list, loss_history: list, N: int, auction_type
     Returns:
         None: The function saves the generated plots to files.
     '''
+    dir_path = f'results/{auction_type}/N={N}/'
+    os.makedirs(dir_path, exist_ok=True)
     plt.close('all')
     plt.plot(literature_error)
     plt.title('Error history')
     plt.xlabel('Episode')
     plt.ylabel('Error')
-    save_images('literature_error', N, auction_type, n_episodes)
+    plt.savefig(f'{dir_path}/literature_error{int(n_episodes/1000)}k.png')
 
     plt.close('all')
     plt.plot(loss_history)
     plt.title('Loss history')
     plt.xlabel('Episode')
     plt.ylabel('Loss')
-    save_images('loss_history', N, auction_type, n_episodes)
+    plt.savefig(f'{dir_path}/loss_history{int(n_episodes/1000)}k.png')
   
 
-def create_gif(img_duration: float = 0.3, input_folder: str = "results/.tmp/*.png", output_gif: str = "results/gifs/evolution.gif") -> None:
+def create_gif(img_duration: float = 0.3) -> None:
     '''
     Creates an GIF from PNG image files.
 
     Args:
         img_duration (float): The duration of each frame in the GIF (in seconds). Default is 0.3 seconds.
-        input_folder (str): The path to the folder containing the PNG files to be included in the GIF. Default is "results/.tmp/*.png".
-        output_gif (str): The path and filename where the GIF will be saved. Default is "results/gifs/evolution.gif".
 
     Returns:
         None: The function creates and saves the GIF.
     '''
-    png_files = glob.glob(input_folder) # Get the list of PNG files in the input folder
-    frames = [imageio.imread(png_file) for png_file in png_files] # Read all PNG files and store them in a list
-
-    print("Creating GIF from {} images".format(len(frames)))
-
-    imageio.mimsave(output_gif, frames, duration=img_duration) # Save the frames as an animated GIF
-
+    input_folder = "results/.tmp/*.png"
+    output_gif = "results/gifs/evolution.gif"
+    png_files = sorted(glob.glob(input_folder))
+    frames = [imageio.imread(png) for png in png_files]
+    print(f"Creating GIF from {len(frames)} images".format(len(frames)))
+    imageio.mimsave(output_gif, frames, duration=img_duration)
     print("GIF created successfully!")

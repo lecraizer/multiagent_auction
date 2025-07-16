@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 class Network(nn.Module):
     """
-    Provides common functionality for saving and loading model checkpoints..
+    Provides common functionality for saving and loading model checkpoints.
     """
     def __init__(self, name: str, chkpt_dir: str) -> None:
         """
@@ -19,10 +19,9 @@ class Network(nn.Module):
         """
         super(Network, self).__init__()
         self.checkpoint_file = os.path.join(chkpt_dir, name)
-        self.type = ''
-
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.to(self.device)
+        self.type = ''
 
     def save_checkpoint(self, name: str) -> None:
         """
@@ -31,7 +30,7 @@ class Network(nn.Module):
         Args:
             name (str): An identifier appended to the checkpoint filename.
         """
-        T.save(self.state_dict(), self.checkpoint_file + '_' + name)
+        T.save(self.state_dict(), f'{self.checkpoint_file}_{name}')
 
     def load_checkpoint(self, name: str) -> None:
         """
@@ -41,7 +40,7 @@ class Network(nn.Module):
             name (str): The identifier of the checkpoint to load.
         """
         print(f'... Loading {self.type} model for {name} ...')
-        self.load_state_dict(T.load(self.checkpoint_file + '_' + name, map_location=self.device))
+        self.load_state_dict(T.load(f'{self.checkpoint_file}_{name}', map_location=self.device))
 
 class CriticNetwork(Network):
     """
@@ -76,8 +75,8 @@ class CriticNetwork(Network):
         """
         super(CriticNetwork, self).__init__(name, chkpt_dir)
         self.type = 'critic'
-        shape_of_input = n_agents*(input_dims+n_actions)
-        if flag: shape_of_input = (n_agents+extra)*(input_dims+n_actions)
+        shape_of_input = n_agents*(input_dims + n_actions)
+        if flag: shape_of_input = (n_agents + extra)*(input_dims + n_actions)
 
         self.fc1 = nn.Linear(shape_of_input, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
@@ -98,10 +97,10 @@ class CriticNetwork(Network):
             T.Tensor: The estimated Q-value for the given state-action combination.
         """
         concatenated_inputs  = T.cat([state, action, others_states, others_actions], dim=1)
-        x = F.relu(self.fc1(concatenated_inputs ))
+        x = F.relu(self.fc1(concatenated_inputs))
         x = F.relu(self.fc2(x))
-        q = self.q(x)
-        return q
+        q_value = self.q(x)
+        return q_value
 
 class ActorNetwork(Network):
     """
@@ -138,28 +137,21 @@ class ActorNetwork(Network):
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.mu = nn.Linear(fc2_dims, n_actions)
 
-        self.init_weights()
+        self._init_layer(self.fc1)
+        self._init_layer(self.fc2)
+        self._init_layer(self.mu, scale=0.003)
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
 
-    def init_weights(self) -> None:
+    def _init_layer(self, layer: nn.Linear, scale: float = 1.0) -> None:
         """
         Initialize the weights and biases of the network layers.
-        
         Uses uniform distribution with calculated scaling factors based on
-        the size of each layer for the first two layers, and a small fixed
-        scaling factor for the output layer.
+        the size of each layer.
         """
-        f1 = 1./np.sqrt(self.fc1.weight.data.size()[0])
-        T.nn.init.uniform_(self.fc1.weight.data, -f1, f1)
-        T.nn.init.uniform_(self.fc1.bias.data, -f1, f1)
-
-        f2 = 1./np.sqrt(self.fc2.weight.data.size()[0])
-        T.nn.init.uniform_(self.fc2.weight.data, -f2, f2)
-        T.nn.init.uniform_(self.fc2.bias.data, -f2, f2)
-
-        f3 = 0.003
-        T.nn.init.uniform_(self.mu.weight.data, -f3, f3)
-        T.nn.init.uniform_(self.mu.bias.data, -f3, f3)
+        fan_in = layer.weight.data.size()[0]
+        limit = scale / np.sqrt(fan_in)
+        T.nn.init.uniform_(layer.weight.data, -limit, limit)
+        T.nn.init.uniform_(layer.bias.data, -limit, limit)
 
     def forward(self, state: T.Tensor) -> T.Tensor:
         """
@@ -171,8 +163,6 @@ class ActorNetwork(Network):
         Returns:
             T.Tensor: The action to be taken, with values normalized between 0 and 1.
         """
-        x = self.fc1(state)
-        x = F.relu(x)
-        x = self.fc2(x)
-        x = T.sigmoid(self.mu(x))
-        return x
+        x = F.relu(self.fc1(state))
+        x = F.relu(self.fc2(x))
+        return T.sigmoid(self.mu(x))

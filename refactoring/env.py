@@ -9,7 +9,7 @@ with warnings.catch_warnings():
 
 class BaseAuctionEnv(Env):
     def __init__(self, n_players, bid_dim=1, obs_dim=1):
-        self.N = n_players
+        self.n_players = n_players
         self.bid_space = Box(low=np.zeros(bid_dim), high=np.ones(bid_dim), dtype=np.float32)
         self.observation_space = Box(low=np.zeros(obs_dim), high=np.ones(obs_dim), dtype=np.float32)
         self.states_shape = self.observation_space.shape
@@ -41,7 +41,7 @@ class MAFirstPriceAuctionEnv(BaseAuctionEnv):
         Returns:
             list: Rewards for each player. Only the winner gets a non-zero reward.
         """
-        rewards = [0] * self.N
+        rewards = [0] * self.n_players
         idx = np.argmax(bids)
         winner_reward = values[idx] - bids[idx]
         rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
@@ -68,7 +68,7 @@ class MAFirstPriceAuctionEnv(BaseAuctionEnv):
         Returns:
             list: New private values for each player, uniformly sampled from [0,1].
         """
-        return [random.random() for _ in range(self.N)]
+        return [random.random() for _ in range(self.n_players)]
 
 class MASecondPriceAuctionEnv(BaseAuctionEnv):
     """
@@ -98,7 +98,7 @@ class MASecondPriceAuctionEnv(BaseAuctionEnv):
         Returns:
             list: Rewards assigned to each player.
         """
-        rewards = [0] * self.N
+        rewards = [0] * self.n_players
         idxs = np.argsort(bids)[-2:]
         max_idx, second_max_idx = idxs[1], idxs[0]
         winner_reward = values[max_idx] - bids[second_max_idx]
@@ -126,7 +126,7 @@ class MASecondPriceAuctionEnv(BaseAuctionEnv):
         Returns:
             list: New private values for each player.
         """
-        return [random.random() for _ in range(self.N)]
+        return [random.random() for _ in range(self.n_players)]
 
 
 class MATariffDiscountEnv(BaseAuctionEnv):
@@ -159,7 +159,7 @@ class MATariffDiscountEnv(BaseAuctionEnv):
         Returns:
             list: Rewards assigned to each player.
         """
-        rewards = [0] * self.N
+        rewards = [0] * self.n_players
         idx = np.argmax(bids)
         winner_reward = self.max_revenue * (1 - bids[idx]) - costs[idx]
         rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
@@ -186,7 +186,7 @@ class MATariffDiscountEnv(BaseAuctionEnv):
         Returns:
             list: New private costs for each player.
         """
-        return [random.random() * self.max_revenue for _ in range(self.N)]
+        return [random.random() * self.max_revenue for _ in range(self.n_players)]
 
 
 class MAAllPayAuctionEnv(BaseAuctionEnv):
@@ -244,7 +244,7 @@ class MAAllPayAuctionEnv(BaseAuctionEnv):
         Returns:
             list: New private values.
         """
-        return [random.random() for _ in range(self.N)]
+        return [random.random() for _ in range(self.n_players)]
 
 
 class MAScoreAuctionEnv(Env):
@@ -256,10 +256,10 @@ class MAScoreAuctionEnv(Env):
     - Reward = value - bid - effort * cost
     """
     def __init__(self, n_players):
-        self.N = n_players
+        self.n_players = n_players
         self.bid_space = Box(low=np.array([0, 0]), high=np.array([1, 1]), dtype=np.float32)
         self.observation_space = Box(low=np.array([0, 0]), high=np.array([1, 1]), dtype=np.float32)
-        self.states_shape = (self.N, 2)
+        self.states_shape = (self.n_players, 2)
 
     def score_function(self, bid, effort):
         return effort - bid
@@ -269,7 +269,7 @@ class MAScoreAuctionEnv(Env):
         idx = np.argmax(scores)
         value, cost = values_costs[idx]
         bid, effort = actions[idx]
-        rewards = [0.0] * self.N
+        rewards = [0.0] * self.n_players
         rewards[idx] = value - bid - effort * cost
         return rewards
 
@@ -277,4 +277,4 @@ class MAScoreAuctionEnv(Env):
         return self.reward_n_players(states, actions)
 
     def reset(self):
-        return [(random.random(), random.random()) for _ in range(self.N)]
+        return [(random.random(), random.random()) for _ in range(self.n_players)]

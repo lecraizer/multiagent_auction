@@ -2,7 +2,7 @@
 models/
 old/
 paper_icaart_results/
-refactoring/.env
+.env
 results/common_value
 results/first_price
 results/second_price
