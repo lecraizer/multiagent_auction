@@ -5,20 +5,20 @@ from utils import *
 from train import *
 from evaluation import *
 from maddpg import MADDPG
-from argparser import parse_args
-from playsound import playsound
 import numpy as np
 
 
 class AuctionSimulationRunner:
-    def __init__(self, auction, BS, trained, n_episodes, create_gif, N, noise_std,
-                 ponderated_avg, aversion_coef, save_plot, alert, tl, extra_players, z):
+    def __init__(self, auction, target_auction, BS, trained, n_episodes, create_gif, N, t, noise_std,
+                 ponderated_avg, aversion_coef, save_plot, alert, tl, extra_players, z, gui):
         self.auction = auction
+        self.target_auction = target_auction
         self.BS = BS
         self.trained = trained
         self.n_episodes = n_episodes
         self.create_gif = create_gif
         self.N = N
+        self.t = t
         self.noise_std = noise_std
         self.ponderated_avg = ponderated_avg
         self.aversion_coef = aversion_coef
@@ -28,6 +28,7 @@ class AuctionSimulationRunner:
         self.extra_players = extra_players
         self.z = z
         self.max_revenue = 3 if auction == 'tariff_discount' else None
+        self.gui = gui
 
     def create_env(self, N):
         if self.auction == 'first_price':
@@ -36,6 +37,8 @@ class AuctionSimulationRunner:
             return MASecondPriceAuctionEnv(N)
         elif self.auction == 'all_pay':
             return MAAllPayAuctionEnv(N)
+        elif self.auction == 'partial_all_pay':
+            return MAPartialAllPayAuctionEnv(N)
         else:
             raise ValueError(f"Auction type '{self.auction}' not recognized.")
 
@@ -61,40 +64,50 @@ class AuctionSimulationRunner:
 
         if not self.trained:
             print('Training models...')
-            MAtrainLoop(maddpg, env, self.n_episodes, self.auction,
+            MAtrainLoop(maddpg, env, self.n_episodes, self.auction, t=self.t,
                         r=self.aversion_coef, gif=self.create_gif,
-                        save_interval=50, tl_flag=self.tl, extra_players=self.extra_players)
-        else:
-            if self.tl:
-                for i in range(self.extra_players):
-                    new_N = self.N + i + 1
-                    prev_N = new_N - 1
-                    is_last = (i == self.extra_players - 1)
-                    tl_flag_iter = not is_last
-                    extra_left = self.extra_players - i - 1 if not is_last else 0
+                        save_interval=50, tl_flag=self.tl, extra_players=self.extra_players, show_gui=self.gui)
+            
+            if self.tl and self.extra_players == 0:
+                self.auction = self.target_auction
+                print(f"Transferring from auction '{self.auction}' to '{self.target_auction}' with N={self.N} agents...")
+                env = self.create_env(self.N)
+                MAtrainLoop(maddpg, env, self.n_episodes, self.auction,
+                            t=self.t, r=self.aversion_coef, gif=self.create_gif,
+                            save_interval=50, tl_flag=self.tl, extra_players=self.extra_players, show_gui=self.gui)
 
-                    print(f'\nTransfer learning step {i+1}/{self.extra_players}: from {prev_N} to {new_N} agents\n')
+        if self.tl:
+            for i in range(self.extra_players):
+                new_N = self.N + i + 1
+                prev_N = new_N - 1
+                is_last = (i == self.extra_players - 1)
+                tl_flag_iter = not is_last
+                extra_left = self.extra_players - i - 1 if not is_last else 0
 
-                    maddpg = MADDPG(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001,
-                                    gamma=0.99, BS=self.BS, fc1=100, fc2=100, n_actions=1,
-                                    n_agents=new_N, total_eps=self.n_episodes, noise_std=0.2,
-                                    tl_flag=tl_flag_iter, extra_players=extra_left)
+                print(f'\nTransfer learning step {i+1}/{self.extra_players}: from {prev_N} to {new_N} agents\n')
 
-                    for k in range(prev_N):
-                        model_name = f"{self.auction}_N_{prev_N}_ag{k}_r{self.aversion_coef}_{self.n_episodes}ep"
-                        maddpg.agents[k].load_models(model_name)
+                maddpg = MADDPG(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001,
+                                gamma=0.99, BS=self.BS, fc1=100, fc2=100, n_actions=1,
+                                n_agents=new_N, total_eps=self.n_episodes, noise_std=0.2,
+                                tl_flag=tl_flag_iter, extra_players=extra_left)
 
-                    self.initialize_new_agent_from_random(maddpg, new_agent_idx=new_N - 1)
+                for k in range(prev_N):
+                    model_name = f"{self.auction}_N_{prev_N}_ag{k}_r{self.aversion_coef}_{self.n_episodes}ep"
+                    maddpg.agents[k].load_models(model_name)
 
-                    env = self.create_env(new_N)
-                    MAtrainLoop(maddpg, env, self.n_episodes, self.auction,
-                                r=self.aversion_coef, gif=self.create_gif,
-                                save_interval=50, tl_flag=tl_flag_iter, extra_players=extra_left)
-            else:
-                print('Evaluating models...')
-                self.load_agents(maddpg, self.N)
-                evaluate_agents(maddpg.agents, n_bids=100, grid_precision=100, auc_type=self.auction)
+                self.initialize_new_agent_from_random(maddpg, new_agent_idx=new_N - 1)
+
+                env = self.create_env(new_N)
+                MAtrainLoop(maddpg, env, self.n_episodes, self.auction,
+                            r=self.aversion_coef, gif=self.create_gif,
+                            save_interval=50, tl_flag=tl_flag_iter, extra_players=extra_left)
+                
+        if self.trained and not self.tl: # Evaluation phase
+            print('Evaluating models...')
+            self.load_agents(maddpg, self.N)
+            evaluate_agents(maddpg.agents, n_bids=100, grid_precision=100, auc_type=self.auction)
 
         if self.alert:
             print('Playing alert sound...')
+            from playsound import playsound
             playsound('beep.mp3')

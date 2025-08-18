@@ -2,6 +2,8 @@
 models/
 old/
 paper_icaart_results/
+icaart_results/
+iceis_results/
 .env
 results/common_value
 results/first_price

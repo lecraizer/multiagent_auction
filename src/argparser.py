@@ -13,7 +13,9 @@ def parse_args():
     parser.add_argument('-e', '--episodes', type=int, default=2000, help='Total number of training episodes')
     parser.add_argument('-n', '--players', type=int, default=2, help='Total number of players')
     parser.add_argument('-r', '--aversion_coef', type=float, default=1.0, help='Aversion coefficient')
-    parser.add_argument('-t', '--transfer_learning', type=bool, default=0, help='Use transfer learning (0 or 1)')
+    parser.add_argument('-t', '--all_pay_exponent', type=float, default=1.0, help='Exponent for partial all-pay auction')
+    parser.add_argument('-ta', '--target_auction', type=str, default=None, help='Target auction type for transfer learning')
+    parser.add_argument('-tl', '--transfer_learning', type=bool, default=0, help='Use transfer learning (0 or 1)')
     parser.add_argument('-x', '--extra_players', type=int, default=0, help='Extra players')
 
     args = parser.parse_args()
@@ -39,21 +41,27 @@ def parse_args():
 
         print(f'{name:<{max_len}} : {v}')
 
+    if not args.target_auction:
+        args.target_auction = args.auction
+
     print('\n-------------------------------\n')
 
     return (
         args.auction,
+        args.target_auction,
         config["batch"],
         args.trained,
         args.episodes,
         config["gif"],
         args.players,
         config["noise"],
+        args.all_pay_exponent,
         config["ponderated"],
         args.aversion_coef,
         config["save"],
         config["alert"],
         args.transfer_learning,
         args.extra_players,
-        config["executions"]
+        config["executions"],
+        config["show_gui"]
     )
