@@ -33,7 +33,7 @@ def formalize_name(auc_type: str) -> str:
         auc_type (str): The auction type name that needs to be formatted.
 
     Returns:
-        auc_type (str): The formatted auction type name.
+        str: The formatted auction type name.
     '''
     return auc_type.replace('_', ' ').title()
 
@@ -55,20 +55,20 @@ def decrease_learning_rate(agents: list, decrease_factor: float) -> None:
                 group['lr'] *= decrease_factor
     print('Learning rate: ', group['lr'])
 
-def calculate_expected_action(N: int, auc_type: str, states: np.array, r: float, max_revenue: float, gam: float) -> float:
+def calculate_expected_action(N: int, auc_type: str, states: np.ndarray, r: float, max_revenue: float, gam: float) -> list:
     '''
     Calculates the expected action of agent.
 
     Args:
         N (int): The total number of agents.
         auc_type (str): The type of auction.
-        states (float): The current state.
+        states (np.ndarray): The current state.
         r (float): A parameter used in specific auction types.
         max_revenue (float): The maximum possible revenue.
         gam (float): .
 
     Returns:
-        float: The expected action.
+        list: The expected action.
     '''
     if auc_type == 'first_price':
         expected = [s * (N - 1) / (N - 1 + r) for s in states]
@@ -134,7 +134,7 @@ def plot_agents_actions(states: np.ndarray, agents_actions: list) -> None:
         plt.scatter(states, actions, s=marker_size,
                     label=f'Bid agent {i + 1}', color=colors[i % len(colors)], marker='*')
         
-def configure_plot_layout(auc_type: str, N: int) -> plt.axes:
+def configure_plot_layout(auc_type: str, N: int) -> plt.gca:
     '''
     Configures the layout of the auction plot, including titles, axis labels, limits, and legend.
 

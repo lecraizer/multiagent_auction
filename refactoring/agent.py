@@ -29,16 +29,16 @@ class Agent(object):
             beta (float): Learning rate for the critic network.
             input_dims (int): Dimensionality of the input state space.
             tau (float): Update parameter for target network updates.
-            gamma (float, optional): Discount factor for future rewards. Defaults is 0.99.
-            n_agents (int, optional): Number of agents in the environment. Defaults is 2.
-            n_actions (int, optional): Dimensionality of the action space. Defaults is 1.
-            layer1_size (int, optional): Size of the first hidden layer in networks. Defaults is 400.
-            layer2_size (int, optional): Size of the second hidden layer in networks. Defaults is 300.
-            batch_size (int, optional): Size of batches for training. Defaults is 64.
-            total_eps (int, optional): Total number of episodes for training. Defaults is 100000.
-            noise_std (float, optional): Standard deviation of exploration noise. Defaults is 0.2.
-            tl_flag (bool, optional): Flag to enable transfer learning. Defaults is False.
-            extra_players (int, optional): Number of additional players for transfer learning. Defaults is 0.
+            gamma (float, optional): Discount factor for future rewards. Default is 0.99.
+            n_agents (int, optional): Number of agents in the environment. Default is 2.
+            n_actions (int, optional): Dimensionality of the action space. Default is 1.
+            layer1_size (int, optional): Size of the first hidden layer in networks. Default is 400.
+            layer2_size (int, optional): Size of the second hidden layer in networks. Default is 300.
+            batch_size (int, optional): Size of batches for training. Default is 64.
+            total_eps (int, optional): Total number of episodes for training. Default is 100000.
+            noise_std (float, optional): Standard deviation of exploration noise. Default is 0.2.
+            tl_flag (bool, optional): Flag to enable transfer learning. Default is False.
+            extra_players (int, optional): Number of additional players for transfer learning. Default is 0.
         """
         self.gamma = gamma
         self.tau = tau
@@ -60,17 +60,17 @@ class Agent(object):
 
         self.update_network_parameters(tau=1)
     
-    def choose_action(self, observation, episode, evaluation = False):
+    def choose_action(self, observation: np.ndarray, episode: int, evaluation: bool = False) -> np.ndarray:
         """
         Select an action based on the current policy and exploration strategy.
         
         Args:
-            observation: The current state of the environment.
+            observation (np.ndarray): The current state of the environment.
             episode (int): Current episode number, used for noise decay.
             evaluation (bool, optional): If True, no exploration noise is added. Defaults is False.
             
         Returns:
-            numpy.ndarray: The selected action.
+            np.ndarray: The selected action.
         """
         self.actor.eval()
         obs_tensor = T.tensor([observation], dtype=T.float).to(self.actor.device)
@@ -83,15 +83,14 @@ class Agent(object):
             action  = action.clamp(0, 1)
 
         self.actor.train()
-        return action .cpu().detach().numpy()
+        return action.cpu().detach().numpy()
 
-    def update_network_parameters(self, tau=None):
+    def update_network_parameters(self, tau: float|None=None) -> None:
         """
         Update target network parameters.
         
         Args:
-            tau (float, optional): Update parameter. If None, use the
-                                  instance's tau value. Defaults is None.
+            tau (float, optional): Update parameter. If None, use the instance's tau value. Default is None.
         """
         if tau is None: tau = self.tau
         for target_param, param in zip(self.target_critic.parameters(), self.critic.parameters()):
@@ -100,7 +99,7 @@ class Agent(object):
         for target_param, param in zip(self.target_actor.parameters(), self.actor.parameters()):
             target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
         
-    def save_models(self, name):
+    def save_models(self, name: str) -> None:
         """
         Save all network models to checkpoint files.
         
@@ -110,7 +109,7 @@ class Agent(object):
         for network in (self.actor, self.target_actor, self.critic, self.target_critic):
             network.save_checkpoint(name)
 
-    def load_models(self, name):
+    def load_models(self, name: str) -> None:
         """
         Load all network models from checkpoint files.
         

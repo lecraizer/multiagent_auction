@@ -7,8 +7,40 @@ from playsound import playsound
 import numpy as np
 
 class AuctionSimulationRunner:
-    def __init__(self, auction, BS, trained, n_episodes, create_gif, N, noise_std,
-                 ponderated_avg, aversion_coef, save_plot, alert, tl, extra_players, z):
+    def __init__(self, 
+                 auction: str, 
+                 BS: int, 
+                 trained: bool, 
+                 n_episodes: int, 
+                 create_gif: bool, 
+                 N: int, 
+                 noise_std: float,
+                 ponderated_avg: bool, 
+                 aversion_coef: float, 
+                 save_plot: bool, 
+                 alert: bool, 
+                 tl: bool, 
+                 extra_players: int, 
+                 z: float):
+        """
+        Initialize the simulation runner with configuration parameters.
+
+        Args:
+            auction (str): Auction type to simulate.
+            BS (int): Batch size for training.
+            trained (bool): Whether to evaluate pre-trained models or train new ones.
+            n_episodes (int): Number of training episodes.
+            create_gif (bool): Whether to save training GIFs.
+            N (int): Initial number of agents.
+            noise_std (float): Standard deviation for action noise.
+            ponderated_avg (bool): Use ponderated averages in evaluation.
+            aversion_coef (float): Risk aversion coefficient.
+            save_plot (bool): Whether to save evaluation plots.
+            alert (bool): Whether to play an alert sound after execution.
+            tl (bool): Enable transfer learning.
+            extra_players (int): Number of agents to add incrementally via transfer learning.
+            z (float): Additional parameter for flexibility.
+        """
         self.auction = auction
         self.BS = BS
         self.trained = trained
@@ -25,7 +57,19 @@ class AuctionSimulationRunner:
         self.z = z
         self.max_revenue = 3 if auction == 'tariff_discount' else None
 
-    def create_env(self, N):
+    def create_env(self, N: int):
+        """
+        Create and return a multi-agent auction environment based on the auction type.
+
+        Args:
+            N (int): Number of agents in the environment.
+
+        Returns:
+            Auction environment instance.
+
+        Raises:
+            ValueError: If the auction type is not recognized.
+        """
         if self.auction == 'first_price':
             return MAFirstPriceAuctionEnv(N)
         elif self.auction == 'second_price':
@@ -35,19 +79,40 @@ class AuctionSimulationRunner:
         else:
             raise ValueError(f"Auction type '{self.auction}' not recognized.")
 
-    def load_agents(self, maddpg, N):
+    def load_agents(self, maddpg, N: int) -> None:
+        """
+        Load pre-trained models for each agent.
+
+        Args:
+            maddpg (MADDPG): Trainer instance containing agent models.
+            N (int): Number of agents.
+        """
         for k in range(N):
             name = f"{self.auction}_N_{N}_ag{k}_r{self.aversion_coef}_{self.n_episodes}ep"
             maddpg.agents[k].load_models(name)
 
-    def initialize_new_agent_from_random(self, maddpg, new_agent_idx):
+    def initialize_new_agent_from_random(self, maddpg, new_agent_idx: int) -> None:
+        """
+        Initialize a new agent's networks by copying weights from a randomly selected existing agent.
+
+        Args:
+            maddpg (MADDPG): Trainer instance containing agent models.
+            new_agent_idx (int): Index of the new agent to initialize.
+        """
         rd_agt_idx = np.random.randint(0, new_agent_idx)
         maddpg.agents[new_agent_idx].actor.load_state_dict(maddpg.agents[rd_agt_idx].actor.state_dict())
         maddpg.agents[new_agent_idx].critic.load_state_dict(maddpg.agents[rd_agt_idx].critic.state_dict())
         maddpg.agents[new_agent_idx].target_actor.load_state_dict(maddpg.agents[rd_agt_idx].target_actor.state_dict())
         maddpg.agents[new_agent_idx].target_critic.load_state_dict(maddpg.agents[rd_agt_idx].target_critic.state_dict())
 
-    def execute(self):
+    def execute(self) -> None:
+        """
+        Run the auction simulation: either training agents or evaluating pre-trained ones.
+
+        - If `trained=False`: starts training loop.
+        - If `trained=True`: loads saved models for evaluation.
+        - If transfer learning is enabled, adds agents one at a time and retrains with knowledge transfer.
+        """
         # Create initial environment and agents
         env = self.create_env(self.N)
         maddpg = MADDPG(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001,

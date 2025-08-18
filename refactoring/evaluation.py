@@ -1,13 +1,13 @@
 import numpy as np
 
-def get_empirical_revenue(own_value, own_bid, others_bids, auc_type='first_price'):
+def get_empirical_revenue(own_value: float, own_bid: float, others_bids: list, auc_type: str='first_price') -> float:
     """
     Estimate the expected revenue for a given bid based on sampled opponent bids.
 
     Args:
         own_value (float): Agent's private value.
         own_bid (float): Agent's chosen bid.
-        others_bids (list of lists): List of bid samples from other agents.
+        others_bids (list): List of bid samples from other agents.
         auc_type (str): Auction type.
 
     Returns:
@@ -24,7 +24,18 @@ def get_empirical_revenue(own_value, own_bid, others_bids, auc_type='first_price
         return (own_value - expected_second_bid) * win_prob
     return (own_value - own_bid) * win_prob
 
-def get_all_bids_except(agents, k, n_bids):
+def get_all_bids_except(agents: list, k: int, n_bids: int) -> list:
+    """
+    Generate bid samples from all agents except one.
+
+    Args:
+        agents (list): List of agent objects.
+        k (int): Index of the agent to exclude.
+        n_bids (int): Number of bid samples to generate per agent.
+
+    Returns:
+        list: A list where each element contains `n_bids` sampled bids from one of the other agents.
+    """
     others_bids = []
     for j in range(len(agents)):
         if j != k:
@@ -33,7 +44,7 @@ def get_all_bids_except(agents, k, n_bids):
             others_bids.append(bids)
     return others_bids
     
-def evaluate_agents(agents, n_bids=100, grid_precision=100, auc_type='first_price'):
+def evaluate_agents(agents: list, n_bids: int=100, grid_precision: int=100, auc_type: str='first_price') -> None:
     """
     Evaluate the trained agents by comparing their bidding strategy to the optimal empirical strategy.
 
