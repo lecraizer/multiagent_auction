@@ -22,15 +22,15 @@ class MAFirstPriceAuctionEnv(BaseAuctionEnv):
     def __init__(self, n_players):
         super().__init__(n_players)
 
-    def reward_n_players(self, values, bids, r):
+    def reward_n_players(self, values, bids, r, t):
         rewards = [0] * self.N
         idx = np.argmax(bids)
         winner_reward = values[idx] - bids[idx]
         rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
         return rewards
 
-    def step(self, states, actions, r):
-        return self.reward_n_players(states, actions, r)
+    def step(self, states, actions, r, t):
+        return self.reward_n_players(states, actions, r, t)
 
     def reset(self):
         return [random.random() for _ in range(self.N)]
@@ -40,7 +40,7 @@ class MASecondPriceAuctionEnv(BaseAuctionEnv):
     def __init__(self, n_players):
         super().__init__(n_players)
 
-    def reward_n_players(self, values, bids, r):
+    def reward_n_players(self, values, bids, r, t):
         rewards = [0] * self.N
         idxs = np.argsort(bids)[-2:]
         max_idx, second_max_idx = idxs[1], idxs[0]
@@ -48,8 +48,8 @@ class MASecondPriceAuctionEnv(BaseAuctionEnv):
         rewards[max_idx] = winner_reward**r if winner_reward > 0 else winner_reward
         return rewards
 
-    def step(self, states, actions, r):
-        return self.reward_n_players(states, actions, r)
+    def step(self, states, actions, r, t):
+        return self.reward_n_players(states, actions, r, t)
 
     def reset(self):
         return [random.random() for _ in range(self.N)]
@@ -78,7 +78,7 @@ class MAAllPayAuctionEnv(BaseAuctionEnv):
     def __init__(self, n_players):
         super().__init__(n_players)
 
-    def reward_n_players(self, values, bids, r):
+    def reward_n_players(self, values, bids, r, t):
         alpha = 0.1
         rewards = [-b - alpha for b in bids]
         idx = np.argmax(bids)
@@ -86,11 +86,36 @@ class MAAllPayAuctionEnv(BaseAuctionEnv):
         rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
         return rewards
 
-    def step(self, states, actions, r):
-        return self.reward_n_players(states, actions, r)
+    def step(self, states, actions, r, t):
+        return self.reward_n_players(states, actions, r, t)
 
     def reset(self):
         return [random.random() for _ in range(self.N)]
+
+
+class MAPartialAllPayAuctionEnv(BaseAuctionEnv):
+    '''
+    All-Pay Auction with a parameter t:
+    - t = 0: First-Price Auction
+    - t = 1: All-Pay Auction
+    - 0 < t < 1: Hybrid Auction
+    '''
+    def __init__(self, n_players):
+        super().__init__(n_players)
+
+    def reward_n_players(self, values, bids, r, t):
+        rewards = [-b*t for b in bids]
+        idx = np.argmax(bids)
+        winner_reward = values[idx] - bids[idx]
+        rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
+        return rewards
+
+    def step(self, states, actions, r, t):
+        return self.reward_n_players(states, actions, r, t)
+    
+    def reset(self):
+        return [random.random() for _ in range(self.N)]
+    
 
 
 class MAScoreAuctionEnv(Env):

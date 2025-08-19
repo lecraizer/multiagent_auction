@@ -29,7 +29,7 @@ def decrease_learning_rate(agents, decrease_factor):
     print('Learning rate: ', group['lr'])  # última lida
 
 
-def manualTesting(agents, N, episode, n_episodes, auc_type='first_price', r=1, max_revenue=1, eps=0.1, vl=0, vh=1, gam=1):
+def manualTesting(agents, N, episode, n_episodes, auc_type='first_price', r=1, t=1, max_revenue=1, eps=0.1, vl=0, vh=1, gam=1):
     plt.close('all')
     states = np.linspace(0, max_revenue if auc_type == 'tariff_discount' else 1, 100)
     colors = ['#1C1B1B', '#184DB8', '#39973E', '#938D8D', '#FF7F0E', '#F15A60', '#7D3C98', '#2CA02C', '#17BECF', '#D62728']
@@ -52,12 +52,16 @@ def manualTesting(agents, N, episode, n_episodes, auc_type='first_price', r=1, m
             expected = states
         elif auc_type == 'all_pay':
             expected = [(s**N) * (N - 1) / N for s in states]
+        elif auc_type == 'partial_all_pay':
+            numerator = [(v**N) * (N - 1) / N for v in states]
+            denominator = [t + (1 - t) * (v**(N - 1)) for v in states]
+            expected = [num / den for num, den in zip(numerator, denominator)]
         else:
             expected = [0 for _ in states]
 
         agent_error = np.mean(np.abs(np.array(actions) - np.array(expected)))
         avg_error += agent_error
-        print(f'Avg error agent {k}: {agent_error:.3f}')
+        print(f'Avg error agent {k+1}: {agent_error:.3f}')
 
         marker_size = 8 if np.all(np.abs(actions) <= 0.01) else 2
         plt.scatter(states, actions, s=marker_size, label=f'Bid agent {k + 1}', color=colors[k % len(colors)], marker='*')
@@ -75,6 +79,17 @@ def manualTesting(agents, N, episode, n_episodes, auc_type='first_price', r=1, m
         plt.plot(states, states, color='#AD1515', linewidth=1.0, label='Expected bid')
     elif auc_type == 'all_pay':
         plt.plot(states, [(s**N) * (N - 1) / N for s in states], color='#AD1515', linewidth=1.0, label=f'Expected bid N={N}')
+        
+        # Check for non-bidding agents and draw alternative equilibrium
+        zero_bidders = sum(np.all(np.abs(a) <= 0.01) for a in agents_actions)
+        active_agents = N - zero_bidders
+        if 0 < active_agents < N:
+            alt_exp = [(s**active_agents) * (active_agents - 1) / active_agents for s in states]
+            plt.plot(states, alt_exp, color='#7B14AF', linewidth=0.5, alpha=0.5, linestyle='--', label=f'Expected bid N={active_agents}')
+
+    elif auc_type == 'partial_all_pay':
+        exponent = 1 + t * (N - 1)
+        plt.plot(states, [(s**exponent) * (N - 1) / N for s in states], color='#AD1515', linewidth=1.0, label=f'Expected bid N={N}, t={t}')
         
         # Check for non-bidding agents and draw alternative equilibrium
         zero_bidders = sum(np.all(np.abs(a) <= 0.01) for a in agents_actions)

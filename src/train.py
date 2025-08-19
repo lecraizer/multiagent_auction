@@ -8,16 +8,21 @@ import shutil
 import os
 from utils import *
 
+from gui import show_auction_episode
 
 def generate_grid_actions(grid_N, max_revenue):
     grid_values = np.linspace(0, 0.9, grid_N)
     return [val + random.uniform(0, max_revenue / grid_N) for val in grid_values]
 
-def log_episode(ep, obs, actions, rewards):
+def log_episode(ep, obs, actions, rewards, show_gui=True):
     print(f'\nEpisode {ep}')
     print('Values:  ', obs)
     print('Bids:    ', actions)
     print('Rewards: ', rewards)
+
+    if show_gui:
+        show_auction_episode(obs, actions, rewards)
+
 
 def save_models_and_update(agents, auction_type, N, r, n_episodes, ep, loss_history, literature_error, gif, decrease_factor):
     for k, agent in enumerate(agents):
@@ -33,9 +38,9 @@ def save_models_and_update(agents, auction_type, N, r, n_episodes, ep, loss_hist
         if os.path.exists(src):
             shutil.copy(src, dst)
 
-def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price',
+def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price', t=1,
                 r=1, max_revenue=1, gam=1, gif=False, save_interval=10,
-                tl_flag=False, extra_players=2):
+                tl_flag=False, extra_players=2, show_gui=False):
     """
     Multiagent training loop function for general auctions
     """
@@ -50,7 +55,7 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price',
     for ep in range(n_episodes):
         observations = env.reset()
         original_actions = [agents[i].choose_action(observations[i], ep)[0] for i in range(N)]
-        original_rewards = env.step(observations, original_actions, r)
+        original_rewards = env.step(observations, original_actions, r, t)
 
         batch_loss = []
 
@@ -61,7 +66,7 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price',
 
             for new_action in grid_actions:
                 test_actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
-                rewards = env.step(observations, test_actions, r)
+                rewards = env.step(observations, test_actions, r, t)
 
                 maddpg.remember(observations[idx], test_actions[idx], rewards[idx], others_obs, others_actions)
                 loss = maddpg.learn(idx, flag=(tl_flag if extra_players > 0 else False), num_tiles=extra_players)
@@ -69,9 +74,9 @@ def MAtrainLoop(maddpg, env, n_episodes, auction_type='first_price',
                     batch_loss.append(loss)
                     
         if ep % save_interval == 0:
-            log_episode(ep, observations, original_actions, original_rewards)
+            log_episode(ep, observations, original_actions, original_rewards, show_gui)
 
-            hist = manualTesting(agents, N, ep, n_episodes, auc_type=auction_type, r=r,
+            hist = manualTesting(agents, N, ep, n_episodes, auc_type=auction_type, t=t, r=r,
                                  max_revenue=max_revenue, gam=gam)
             literature_error.append(np.mean(hist))
             if batch_loss:
