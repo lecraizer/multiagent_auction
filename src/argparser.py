@@ -1,67 +1,28 @@
-import argparse
 import json
 
-def parse_args():
+def load_args():
     """
-    Parse command line arguments + load technical parameters from params.json
+    Load parameters from json file.
     """
-    parser = argparse.ArgumentParser(description='Parse terminal input information')
-
-    # Only keep essential arguments for user
-    parser.add_argument('-a', '--auction', type=str, default='first_price', help='Auction type')
-    parser.add_argument('-d', '--trained', type=bool, default=0, help='Load models instead of training them (0 or 1)')
-    parser.add_argument('-e', '--episodes', type=int, default=2000, help='Total number of training episodes')
-    parser.add_argument('-n', '--players', type=int, default=2, help='Total number of players')
-    parser.add_argument('-r', '--aversion_coef', type=float, default=1.0, help='Aversion coefficient')
-    parser.add_argument('-t', '--all_pay_exponent', type=float, default=1.0, help='Exponent for partial all-pay auction')
-    parser.add_argument('-ta', '--target_auction', type=str, default=None, help='Target auction type for transfer learning')
-    parser.add_argument('-tl', '--transfer_learning', type=bool, default=0, help='Use transfer learning (0 or 1)')
-    parser.add_argument('-x', '--extra_players', type=int, default=0, help='Extra players')
-
-    args = parser.parse_args()
-
-    # Load technical parameters from JSON
     with open("params.json", "r") as f:
         config = json.load(f)
 
-    # Combine and separate CLI args and config
-    cli_args = vars(args)
-
-    print('\n--- Configuration ---\n')
-    max_len = max(len(k.replace('_', ' ')) for k in cli_args)
-
-    for k, v in cli_args.items():
-        name = k.replace('_', ' ').title()
-
-        # Interpret 0 or 1 as booleans if that makes sense
-        if isinstance(v, str):
-            v = v.replace('_', ' ').title()
-        elif isinstance(v, int) and v in (0, 1):
-            v = 'Yes' if v == 1 else 'No'
-
-        print(f'{name:<{max_len}} : {v}')
-
-    if not args.target_auction:
-        args.target_auction = args.auction
-
-    print('\n-------------------------------\n')
-
     return (
-        args.auction,
-        args.target_auction,
+        config["auction"],
+        config["target_auction"],
         config["batch"],
-        args.trained,
-        args.episodes,
+        config["trained"],
+        config["episodes"],
         config["gif"],
-        args.players,
+        config["players"],
         config["noise"],
-        args.all_pay_exponent,
+        config["all_pay_exponent"],
         config["ponderated"],
-        args.aversion_coef,
+        config["aversion_coef"],
         config["save"],
         config["alert"],
-        args.transfer_learning,
-        args.extra_players,
+        config["transfer_learning"],
+        config["extra_players"],
         config["executions"],
         config["show_gui"]
     )

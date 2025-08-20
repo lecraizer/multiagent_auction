@@ -1,9 +1,10 @@
-# Module for setting up the replay buffer for the multi-agent DDPG algorithm
-
 import numpy as np
 
 class ReplayBuffer(object):
-    def __init__(self, max_size, input_shape, n_actions, num_agents=2):
+    """
+    Implements a replay buffer for storing agent interactions with the environment.
+    """
+    def __init__(self, max_size: int, input_shape: int, n_actions: int, num_agents: int = 2) -> None:
         """
         Initialize the replay buffer with fixed-size memory for each component.
 
@@ -11,81 +12,86 @@ class ReplayBuffer(object):
             max_size (int): Maximum number of transitions to store.
             input_shape (int): Dimension of the state vector.
             n_actions (int): Dimension of the action vector.
-            num_agents (int): Total number of agents in the environment.
+            num_agents (int, optional): Total number of agents in the environment (default is 2).
         """
         self.mem_size = max_size
         self.mem_cntr = 0
 
-        # Buffers for agent's own experience
         self.state_memory = np.zeros((self.mem_size, input_shape))
         self.action_memory = np.zeros((self.mem_size, n_actions))
         self.reward_memory = np.zeros(self.mem_size)
 
-        # Buffers for other agents' experiences
         self.others_states = np.zeros((self.mem_size, input_shape*(num_agents-1)))
         self.others_actions = np.zeros((self.mem_size, n_actions*(num_agents-1)))
 
-
-    def store_transition(self, state, action, reward, others_states, others_actions):
+    def get_values(self, idx: int | list) -> tuple:
         """
-        Store a new transition in the buffer using circular indexing.
+        Retrieves the stored values (states, actions, rewards, others_states, others_actions) 
+        from memory at the specified indice.
 
         Args:
-            state (ndarray): Current agent's observation.
-            action (ndarray): Current agent's action.
-            reward (float): Reward received.
-            others_states (ndarray): Concatenated observations of other agents.
-            others_actions (ndarray): Concatenated actions of other agents.
+            idx (int or list): The indices of the values to retrieve.
+
+        Returns:
+            tuple: A tuple containing states, actions, rewards, others_states and others_actions.
+        """
+        states = self.state_memory[idx]
+        actions = self.action_memory[idx]
+        rewards = self.reward_memory[idx]
+
+        others_states = self.others_states[idx]
+        others_actions = self.others_actions[idx]
+
+        return states, actions, rewards, others_states, others_actions
+
+    def store_transition(self, state: np.ndarray, action: np.ndarray, reward: float, others_states: np.ndarray, 
+                         others_actions: np.ndarray) -> None:
+        """
+        Stores state, action, reward, others_states and others_actions in the memory buffer.
+
+        Args:
+            state (np.ndarray): Current agent's observation.
+            action (np.ndarray): Current agent's action.
+            reward (float): Reward received after taking the action.
+            others_states (np.ndarray): Concatenated observations of other agents.
+            others_actions (np.ndarray): Concatenated actions of other agents.
+
+        The memory counter is updated after storing the transition.
         """
         index = self.mem_cntr % self.mem_size
         self.state_memory[index] = state
         self.action_memory[index] = action
         self.reward_memory[index] = reward
-        self.mem_cntr += 1
 
         self.others_states[index] = others_states
         self.others_actions[index] = others_actions
+        self.mem_cntr += 1
 
-
-    def sample_buffer(self, batch_size):
+    def sample_buffer(self, batch_size: int) -> tuple:
         """
-        Sample a random batch of transitions from the buffer.
+        Samples a random subset of the memory buffer.
 
         Args:
             batch_size (int): Number of transitions to sample.
 
         Returns:
-            Tuple of (states, actions, rewards, others_states, others_actions)
+            tuple: The set of values sampled, which is limited by mem_cntr or mem_size.
         """
         max_mem = min(self.mem_cntr, self.mem_size)
         batch = np.random.choice(max_mem, batch_size)
-        states = self.state_memory[batch]
-        actions = self.action_memory[batch]
-        rewards = self.reward_memory[batch]
-
-        others_states = self.others_states[batch]
-        others_actions = self.others_actions[batch]
-
-        return states, actions, rewards, others_states, others_actions
     
-
-    def sample_last_buffer(self, batch_size):
+        return self.get_values(batch)
+    
+    def sample_last_buffer(self, batch_size: int) -> tuple:
         """
-        Sample the most recent `batch_size` transitions from the buffer.
+        Samples the last batch_size elements from the buffer.
 
         Args:
             batch_size (int): Number of transitions to retrieve.
 
         Returns:
-            Tuple of (states, actions, rewards, others_states, others_actions)
+            tuple: The last batch_size values (states, actions, rewards, other agents' states, other agents' actions).
         """
-        end = self.mem_cntr
-        start = max(0, end - batch_size)
+        if self.mem_cntr < batch_size: batch_size = self.mem_cntr 
 
-        states = self.state_memory[start:end]
-        actions = self.action_memory[start:end]
-        rewards = self.reward_memory[start:end]
-        others_states = self.others_states[start:end]
-        others_actions = self.others_actions[start:end]
-
-        return states, actions, rewards, others_states, others_actions
+        return self.get_values(range(self.mem_cntr-batch_size, self.mem_cntr))

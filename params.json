@@ -1,4 +1,13 @@
 {
+  "auction": "second_price",
+  "target_auction": "second_price",
+  "trained": 0,
+  "episodes": 2000,
+  "players": 2,
+  "aversion_coef": 1.0,
+  "transfer_learning": 0,
+  "all_pay_exponent": 1.0,
+  "extra_players": 0,
   "batch": 64,
   "noise": 0.2,
   "ponderated": 100,

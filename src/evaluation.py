@@ -1,42 +1,50 @@
-# Module to evaluate the performance of the agents and check if agents converge to their optimal bids
-
 import numpy as np
 
-
-def get_empirical_revenue(own_value, own_bid, others_bids, auc_type='first_price'):
+def get_empirical_revenue(own_value: float, own_bid: float, others_bids: list, auc_type: str='first_price') -> float:
     """
     Estimate the expected revenue for a given bid based on sampled opponent bids.
 
     Args:
         own_value (float): Agent's private value.
         own_bid (float): Agent's chosen bid.
-        others_bids (list of lists): List of bid samples from other agents.
+        others_bids (list): List of bid samples from other agents.
         auc_type (str): Auction type.
 
     Returns:
         float: Estimated revenue.
     """
-    # Combine bids at each round into tuples and get max bid from each round
     tuples_list = list(zip(*others_bids))
     max_bids = [max(t) for t in tuples_list]
-
-    # Compute empirical win probability (frequency of winning)
     win_prob = sum(own_bid > b for b in max_bids) / len(max_bids)
-    if win_prob == 0.0:
-        return 0.0
-
-    # Estimate revenue depending on auction type
+    if win_prob == 0.0: return 0.0
     if auc_type == 'second_price':
         bids_below_own_bid = [b for b in max_bids if b < own_bid]
-        if not bids_below_own_bid:
-            return 0.0
-        expected_second_bid = sum(bids_below_own_bid) / len(bids_below_own_bid)
+        if not bids_below_own_bid: return 0.0
+        expected_second_bid = np.mean(bids_below_own_bid)
         return (own_value - expected_second_bid) * win_prob
-
     return (own_value - own_bid) * win_prob
 
+def get_all_bids_except(agents: list, k: int, n_bids: int) -> list:
+    """
+    Generate bid samples from all agents except one.
 
-def evaluate_agents(agents, n_bids=100, grid_precision=100, auc_type='first_price'):
+    Args:
+        agents (list): List of agent objects.
+        k (int): Index of the agent to exclude.
+        n_bids (int): Number of bid samples to generate per agent.
+
+    Returns:
+        list: A list where each element contains `n_bids` sampled bids from one of the other agents.
+    """
+    others_bids = []
+    for j in range(len(agents)):
+        if j != k:
+            bids = [agents[j].choose_action(np.random.random(), 0, evaluation=True)[0] 
+                    for _ in range(n_bids)]
+            others_bids.append(bids)
+    return others_bids
+    
+def evaluate_agents(agents: list, n_bids: int=100, grid_precision: int=100, auc_type: str='first_price') -> None:
     """
     Evaluate the trained agents by comparing their bidding strategy to the optimal empirical strategy.
 
@@ -53,47 +61,27 @@ def evaluate_agents(agents, n_bids=100, grid_precision=100, auc_type='first_pric
 
     print('\nEvaluation Results (based on revenue difference)')
     print('-----------------------------------------------')
-    print(f'{"Player":<20}{"Avg Revenue Diff":>20}')
-    print('-----------------------------------------------')
 
     for k in range(len(agents)):
-        # Estimate empirical bid distributions of other agents
-        others_bids = []
-        for j in range(len(agents)):
-            if j != k:
-                bids = [agents[j].choose_action(np.random.random(), 0, evaluation=True)[0] for _ in range(n_bids)]
-                others_bids.append(bids)
-
+        others_bids = get_all_bids_except(agents, k, n_bids)
         revenue_diffs = []
-        # bid_diffs = []  # Optional: uncomment to compare bids
-
         for _ in range(200):
-            own_value = np.random.random()
-
-            # Grid search for optimal empirical bid
+            own_value = np.random.random()       
             opt_empirical_revenue = 0.0
             optimal_bid = 0.0
             for b in range(grid_precision):
-                own_bid = b / grid_precision
+                own_bid = b/grid_precision
                 revenue = get_empirical_revenue(own_value, own_bid, others_bids, auc_type)
                 if revenue > opt_empirical_revenue:
                     opt_empirical_revenue = revenue
                     optimal_bid = own_bid
 
-            # Agent's bid and revenue
             own_optimal_bid = agents[k].choose_action(own_value, 0, evaluation=True)[0]
             win_prob = sum(own_optimal_bid > b for b in [max(t) for t in zip(*others_bids)]) / len(others_bids[0])
-            opt_player_revenue = (own_value - own_optimal_bid) * win_prob
-            revenue_diff = abs(opt_empirical_revenue - opt_player_revenue)
-            revenue_diffs.append(revenue_diff)
-
-            # Optional: difference in bid values
-            # bid_diff = abs(optimal_bid - own_optimal_bid)
-            # bid_diffs.append(bid_diff)
+            opt_player_revenue = (own_value - own_optimal_bid)*win_prob
+            revenue_diffs.append(abs(opt_empirical_revenue - opt_player_revenue))
 
         avg_revenue_diff = np.mean(revenue_diffs)
         revenue_diffs_all.append(avg_revenue_diff)
-        print(f'{"Player " + str(k+1):<20}{avg_revenue_diff:>20.6f}')
-
-    print('-----------------------------------------------')
-    print(f'{"All Players Average":<20}{np.mean(revenue_diffs_all):>20.6f}\n')
+        print('\nAvg diff bids player', k+1, ':', avg_revenue_diff)
+    print('\nAverage difference all players:', np.mean(revenue_diffs_all))
