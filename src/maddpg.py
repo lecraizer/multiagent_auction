@@ -1,10 +1,9 @@
+import torch as T
 import numpy as np
+import torch.nn.functional as F
 
 from agent import Agent
 from buffer import ReplayBuffer
-
-import torch as T
-import torch.nn.functional as F
 
 class MADDPG:
     """
@@ -15,27 +14,38 @@ class MADDPG:
     the states and actions of other agents.
 
     Parameters:
-    - alpha, beta: learning rates for actor and critic networks.
-    - input_dims: dimension of the input state.
-    - tau: soft update parameter for target networks.
-    - gamma: discount factor for future rewards.
-    - BS: batch size.
-    - fc1, fc2: number of neurons in hidden layers.
-    - n_actions: number of actions per agent.
-    - n_agents: number of agents in the environment.
-    - total_eps: total number of training episodes.
-    - noise_std: standard deviation of Gaussian noise for exploration.
-    - tl_flag: boolean flag for transfer learning.
-    - extra_players: number of "ghost" agents to be added.
+    - alpha, beta (float): learning rates for actor and critic networks.
+    - input_dims (int): dimension of the input state.
+    - tau (float): soft update parameter for target networks.
+    - gamma (float): discount factor for future rewards.
+    - BS (int): batch size.
+    - fc1, fc2 (int): number of neurons in hidden layers.
+    - n_actions (int): number of actions per agent.
+    - n_agents (int): number of agents in the environment.
+    - total_eps (int): total number of training episodes.
+    - noise_std (float): standard deviation of Gaussian noise for exploration.
+    - tl_flag (bool): boolean flag for transfer learning.
+    - extra_players (int): number of "ghost" agents to be added.
     """
     
-    def __init__(self, alpha=0.000025, beta=0.00025, input_dims=1, 
-                 tau=0.001, gamma=0.99, BS=64, fc1=64, fc2=64, 
-                 n_actions=1, n_agents=2, total_eps=100000, 
-                 noise_std=0.2, tl_flag=False, extra_players=0):
+    def __init__(self,
+                 alpha: float=0.000025, 
+                 beta: float=0.00025, 
+                 input_dims: int=1, 
+                 tau: float=0.001, 
+                 gamma: float=0.99, 
+                 BS: int=64, 
+                 fc1: int=64, 
+                 fc2: int=64, 
+                 n_actions: int=1, 
+                 n_agents: int=2, 
+                 total_eps: int=100000, 
+                 noise_std: float=0.2, 
+                 tl_flag: bool=False, 
+                 extra_players: int=0):
         self.agents = []
         self.num_agents = n_agents
-        for i in range(n_agents):
+        for _ in range(n_agents):
             self.agents.append(Agent(alpha=alpha, beta=beta, input_dims=input_dims, 
                                      tau=tau, batch_size=BS, layer1_size=fc1, 
                                      layer2_size=fc2, n_agents=self.num_agents,
@@ -49,7 +59,7 @@ class MADDPG:
         self.memory = ReplayBuffer(self.max_size, input_dims, n_actions, self.num_agents)
         self.short_memory = ReplayBuffer(1, input_dims, n_actions, self.num_agents)
 
-    def _create_ghosts(self, array, num_tiles):
+    def _create_ghosts(self, array: np.ndarray, num_tiles: int) -> np.ndarray:
         """
         Adds ghost agents by replicating the first column of the input array multiple times.
 
@@ -64,7 +74,7 @@ class MADDPG:
         tiled = np.tile(first_column, (1, num_tiles))
         return np.concatenate([array, tiled], axis=1)
 
-    def _get_others_actions(self, idx, others_states, network='target_actor'):
+    def _get_others_actions(self, idx: int, others_states: T.tensor, network: str='target_actor') -> T.tensor:
         """
         Computes the actions of all agents except the one with index `idx`.
 
@@ -85,8 +95,8 @@ class MADDPG:
             actions.append(agent_net.forward(state_col))
         return T.cat(actions, dim=1)
 
-    def _train_critic(self, agent, state, action, reward, others_states, others_actions, 
-                      target_actions, others_target_actions):
+    def _train_critic(self, agent, state: T.tensor, action: T.tensor, reward: T.tensor, others_states: T.tensor, 
+                      others_actions: T.tensor, target_actions: T.tensor, others_target_actions: T.tensor) -> None:
         """
         Trains the critic network of a given agent.
 
@@ -114,7 +124,7 @@ class MADDPG:
         critic_loss.backward()
         agent.critic.optimizer.step()
 
-    def _train_actor(self, agent, idx, state, others_states, flag, num_tiles):
+    def _train_actor(self, agent, idx: int, state: T.tensor, others_states: T.tensor, flag: bool, num_tiles: int) -> None:
         """
         Trains the actor network of a given agent.
 
@@ -145,7 +155,7 @@ class MADDPG:
         agent.actor.optimizer.step()
         agent.update_network_parameters()
 
-    def _learn_from_memory(self, memory, idx, flag, num_tiles):
+    def _learn_from_memory(self, memory, idx: int, flag: bool, num_tiles: int) -> None:
         """
         Executes one learning step using the given memory buffer.
 
@@ -190,7 +200,8 @@ class MADDPG:
 
         self._train_actor(agent, idx, state, others_states, flag, num_tiles)
 
-    def remember(self, state, action, reward, others_states, others_actions):
+    def remember(self, state: T.tensor, action: T.tensor, reward: T.tensor, others_states: T.tensor, 
+                 others_actions: T.tensor) -> None:
         """
         Stores a transition in both long-term and short-term memory buffers.
 
@@ -201,7 +212,7 @@ class MADDPG:
         self.memory.store_transition(state, action, reward, others_states, others_actions)
         self.short_memory.store_transition(state, action, reward, others_states, others_actions)
 
-    def learn(self, idx, flag=False, num_tiles=3):
+    def learn(self, idx: int, flag: bool=False, num_tiles: int=3) -> None:
         """
         Performs a learning step for the agent with index `idx`.
 
