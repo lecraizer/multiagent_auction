@@ -10,12 +10,8 @@ def show_auction_episode(values, bids, rewards):
         canvas = tk.Canvas(root, width=800, height=canvas_height, bg='white')
         canvas.pack()
 
-        agent_width = 200
-        spacing = 50
-
         #### ---- LEILOEIRO (topo central) ---- ####
-        lx = 400  # centro da tela
-        ly = 70   # posição vertical
+        lx, ly = 400, 70  # centro da tela, posição vertical
 
         # Cabeça
         canvas.create_oval(lx - 15, ly - 60, lx + 15, ly - 30, fill="orange", outline="black")
@@ -32,7 +28,6 @@ def show_auction_episode(values, bids, rewards):
 
         #### ---- AGENTES (distribuição dinâmica) ---- ####
         cols = 3
-        rows = (len(values) + cols - 1) // cols
 
         x_padding = 50
         y_start = 240

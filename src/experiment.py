@@ -84,6 +84,8 @@ class AuctionSimulationRunner:
             return MAAllPayAuctionEnv(N)
         elif self.auction == 'partial_all_pay':
             return MAPartialAllPayAuctionEnv(N)
+        elif self.auction == 'custom':
+            return MACustomAuctionEnv(N)
         else:
             raise ValueError(f"Auction type '{self.auction}' not recognized.")
 
@@ -171,7 +173,7 @@ class AuctionSimulationRunner:
         if self.trained and not self.tl: # Evaluation phase
             print('Evaluating models...')
             self.load_agents(maddpg, self.n_players)
-            evaluate_agents(maddpg.agents, n_bids=100, grid_precision=100, auc_type=self.auction)
+            evaluate_agents(env, maddpg.agents, n_bids=100, grid_precision=100, auc_type=self.auction)
 
         if self.alert:
             print('Playing alert sound...')
