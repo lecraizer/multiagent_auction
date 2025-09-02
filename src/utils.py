@@ -56,7 +56,7 @@ def decrease_learning_rate(agents: list, decrease_factor: float) -> None:
                 group['lr'] *= decrease_factor
     print('Learning rate: ', group['lr'])
 
-def calculate_expected_action(N: int, auc_type: str, states: np.ndarray, r: float, t: float, max_revenue: float, gam: float) -> list:
+def calculate_expected_action(N: int, auc_type: str, states: np.ndarray, r: float, t: float, max_revenue: float) -> list:
     '''
     Calculates the expected action of agent.
 
@@ -66,7 +66,6 @@ def calculate_expected_action(N: int, auc_type: str, states: np.ndarray, r: floa
         states (np.ndarray): The current state.
         r (float): A parameter used in specific auction types.
         max_revenue (float): The maximum possible revenue.
-        gam (float): .
 
     Returns:
         list: The expected action.
@@ -90,7 +89,7 @@ def calculate_expected_action(N: int, auc_type: str, states: np.ndarray, r: floa
 
     return expected
 
-def calculate_agents_actions(agents: list, N: int, episode: int, auc_type: str, r: float, t: float, max_revenue: float, gam: float) -> tuple:
+def calculate_agents_actions(agents: list, N: int, episode: int, auc_type: str, r: float, t: float, max_revenue: float) -> tuple:
     '''
     Calculates the actions (bids) of each agent for a range of states and computes the average error 
     between the agent's actions and the expected bids based on auction theory.
@@ -102,7 +101,6 @@ def calculate_agents_actions(agents: list, N: int, episode: int, auc_type: str, 
         auc_type (str): The type of auction.
         r (float): A parameter used in specific auction types.
         max_revenue (float): The maximum possible revenue (used in some auction types).
-        gam (float): A parameter used in core-selecting auctions.
 
     Returns:
         tuple: 
@@ -117,7 +115,7 @@ def calculate_agents_actions(agents: list, N: int, episode: int, auc_type: str, 
     for k, agent in enumerate(agents):
         actions = [agent.choose_action(state, episode, evaluation=1)[0] for state in states] 
         agents_actions.append(actions)
-        expected_action = calculate_expected_action(N, auc_type, states, r, t, max_revenue, gam)
+        expected_action = calculate_expected_action(N, auc_type, states, r, t, max_revenue)
         agent_error = np.mean(np.abs(np.array(actions) - np.array(expected_action)))
         avg_error += agent_error
         print(f'Avg error agent {k + 1}: {agent_error:.3f}')
@@ -162,7 +160,7 @@ def configure_plot_layout(auc_type: str, N: int) -> Axes:
     return axes
 
 def plot_expected_bid_curve(states: np.ndarray, auc_type: str, N: int, r: float, t: float, max_revenue: float, 
-                            gam: float, count_zeros: int) -> None:
+                            count_zeros: int) -> None:
     '''
     Plots the theoretical (expected) bidding curve based on auction type and parameters.
     The function adds the expected bid curve to the current plot.
@@ -173,7 +171,6 @@ def plot_expected_bid_curve(states: np.ndarray, auc_type: str, N: int, r: float,
         N (int): The number of agents.
         r (float): A parameter used in some auction types.
         max_revenue (float): The maximum possible revenue (used in some auction types).
-        gam (float): A parameter used in core-selecting auctions.
         count_zeros (int): The number of agents with zero bids, used for alternate plotting logic in all-pay auctions.
     '''
     def _plot(y_vals, label_suffix='', color='#AD1515', linestyle='-', linewidth=1.0, alpha=1.0):
@@ -203,7 +200,7 @@ def plot_expected_bid_curve(states: np.ndarray, auc_type: str, N: int, r: float,
                 _plot(alt_exp, label_suffix=f'N={active_agents}', color='#7B14AF', linestyle='--', linewidth=0.5, alpha=0.5)
             
 def manualTesting(agents: list, N: int, episode: int, n_episodes: int, auc_type: str = 'first_price', r: float = 1, t: float = 1, 
-                  max_revenue: float = 1, eps: float = 0.1, vl: float = 0, vh: float = 1, gam: float = 1) -> float:
+                  max_revenue: float = 1) -> float:
     '''
     Performs manual testing of agent policies by plotting their bidding behavior against the theoretical benchmark,
     and saving the resulting plot.
@@ -216,15 +213,11 @@ def manualTesting(agents: list, N: int, episode: int, n_episodes: int, auc_type:
         auc_type (str): The type of auction. Default is 'first_price'.
         r (float): A parameter used in specific auction types.
         max_revenue (float): The maximum possible revenue. Default is 1.
-        eps (float): Default is 0.1.
-        vl (float): Default is 0.
-        vh (float): Default is 1.
-        gam (float): Default is 1.
 
     Returns:
         avg_error (float): The average error between agent bids and expected bids.
     '''
-    states, agents_actions, avg_error = calculate_agents_actions(agents, N, episode, auc_type, r, t, max_revenue, gam)
+    states, agents_actions, avg_error = calculate_agents_actions(agents, N, episode, auc_type, r, t, max_revenue)
     
     plt.close('all') # reset plot variables
     plot_agents_actions(states, agents_actions)
@@ -233,7 +226,7 @@ def manualTesting(agents: list, N: int, episode: int, n_episodes: int, auc_type:
     for i in agents_actions:
         if np.all(np.abs(i) <= 0.01): count_zeros += 1
 
-    plot_expected_bid_curve(states, auc_type, N, r, t, max_revenue, gam, count_zeros)
+    plot_expected_bid_curve(states, auc_type, N, r, t, max_revenue, count_zeros)
     axes = configure_plot_layout(auc_type, N)
     if auc_type == 'tariff_discount': axes.set_xlim([0, max_revenue])
 

@@ -61,7 +61,6 @@ class AuctionSimulationRunner:
         self.extra_players = extra_players
         self.z = z
         self.gui = gui
-        self.max_revenue = 3 if auction == 'tariff_discount' else None
 
     def create_env(self, N: int):
         """

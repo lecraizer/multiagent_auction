@@ -125,16 +125,15 @@ class MATariffDiscountEnv(BaseAuctionEnv):
     and receives a reward based on the difference between maximum revenue and 
     their bid, adjusted by their costs.
     """
-    def __init__(self, n_players: int, max_revenue: float) -> None:
+    def __init__(self, n_players: int) -> None:
         """
         Initialize the tariff discount auction environment.
 
         Args:
             n_players (int): Number of players participating in the auction.
-            max_revenue (float): Maximum revenue that can be achieved in the auction.
         """
         super().__init__(n_players)
-        self.max_revenue = max_revenue
+        self.upper_bound = 3
 
     def step(self, costs: list[float], bids: list[float], r: float) -> list[float]:
         """
@@ -151,19 +150,19 @@ class MATariffDiscountEnv(BaseAuctionEnv):
         """
         rewards = [0] * self.n_players
         idx = np.argmax(bids)
-        winner_reward = self.max_revenue * (1 - bids[idx]) - costs[idx]
+        winner_reward = self.upper_bound * (1 - bids[idx]) - costs[idx]
         rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
         return rewards
 
     def reset(self) -> list[float]:
         """
         Reset the environment by generating new private cost values for each player.
-        Each cost is randomly sampled from a uniform distribution in the range [0, max_revenue].
+        Each cost is randomly sampled from a uniform distribution in the range [0, upper_bound].
 
         Returns:
             list: New private costs for each player.
         """
-        return [random.random() * self.max_revenue for _ in range(self.n_players)]
+        return [random.random() * self.upper_bound for _ in range(self.n_players)]
 
 
 class MAAllPayAuctionEnv(BaseAuctionEnv):
