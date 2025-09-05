@@ -56,31 +56,34 @@ class Agent(object):
                                          name='target_actor', n_agents=n_agents)
         
         self.target_critic = CriticNetwork(beta, input_dims, layer1_size, layer2_size, n_actions=n_actions,
-                                           name='target_critic', n_agents=n_agents, flag=tl_flag, extra=extra_players)
+                                           name='target_critic', n_agents=n_agents, flag=tl_flag, 
+                                           extra=extra_players)
 
         self.update_network_parameters(tau=1)
     
-    def choose_action(self, observation: np.ndarray, episode: int, evaluation: bool = False) -> np.ndarray:
+    def choose_action(self, observation: np.ndarray, episode: int, evaluation: bool = False, 
+                      max_revenue: float = 1) -> np.ndarray:
         """
         Select an action based on the current policy and exploration strategy.
         
         Args:
             observation (np.ndarray): The current state of the environment.
             episode (int): Current episode number, used for noise decay.
-            evaluation (bool, optional): If True, no exploration noise is added. Defaults is False.
+            evaluation (bool, optional): If True, no exploration noise is added. 
+                                         Defaults is False.
             
         Returns:
             np.ndarray: The selected action.
         """
         self.actor.eval()
         obs_tensor = T.tensor([observation], dtype=T.float).to(self.actor.device)
-        action = self.actor.forward(obs_tensor).to(self.actor.device)
+        action = self.actor.forward(obs_tensor, max_revenue).to(self.actor.device)
         
         if not evaluation:
             noise = T.tensor(np.random.normal(0, self.noise_std), dtype=T.float).to(self.actor.device)
             decay = 1 - (episode / self.total_episodes)
             action  += noise * decay
-            action  = action.clamp(0, 1)
+            action  = action.clamp(0, max_revenue)
 
         self.actor.train()
         return action.cpu().detach().numpy()
@@ -90,13 +93,16 @@ class Agent(object):
         Update target network parameters.
         
         Args:
-            tau (float, optional): Update parameter. If None, use the instance's tau value. Default is None.
+            tau (float, optional): Update parameter. If None, use the instance's tau value. 
+                                   Default is None.
         """
         if tau is None: tau = self.tau
-        for target_param, param in zip(self.target_critic.parameters(), self.critic.parameters()):
+        for target_param, param in zip(self.target_critic.parameters(), 
+                                       self.critic.parameters()):
             target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
 
-        for target_param, param in zip(self.target_actor.parameters(), self.actor.parameters()):
+        for target_param, param in zip(self.target_actor.parameters(), 
+                                       self.actor.parameters()):
             target_param.data.copy_(tau * param.data + (1 - tau) * target_param.data)
         
     def save_models(self, name: str) -> None:

@@ -9,20 +9,31 @@ class BaseAuctionEnv():
     """
     Implement a base auction environment.
     """
-    def __init__(self, n_players:int, lower_bound:float=0, upper_bound:float=1):
+    def __init__(self, n_players:int, upper_bound:float=1):
         """
         Initialize the auction environment.
 
         Args:
             n_players (int): Number of players participating in the auction.
-            lower_bound (float): Lower bound of action space.
             upper_bound (float): Upper bound of action space.
         """
         self.n_players = n_players
-        self.lower_bound = lower_bound
         self.upper_bound = upper_bound
     
     def value_paid(self, own_bid: float, bids: float):
+        """
+        Compute the amount paid by a player in the auction.
+
+        By default, the value paid is simply the player's own bid.
+        This method can be overridden by subclasses to implement 
+        different payment rules.
+        Args:
+            own_bid (float): The bid submitted by the player.
+            bids (float): The set of bids in the auction.
+
+        Returns:
+            float: The amount paid by the player.
+        """
         return own_bid
 
 class MAFirstPriceAuctionEnv(BaseAuctionEnv):
@@ -112,7 +123,20 @@ class MASecondPriceAuctionEnv(BaseAuctionEnv):
         """
         return [random.random() for _ in range(self.n_players)]
     
-    def value_paid(self, own_bid, bids):
+    def value_paid(self, own_bid: float, bids: list[float]) -> float:
+        """
+        Compute the effective payment of a player in the second-price auction.
+        The payment is defined as the average of all 
+        bids strictly lower than the player's own bid. If the player's bid is 
+        the lowest, the payment is zero.
+
+        Args:
+            own_bid (float): The bid submitted by the player.
+            bids (list[float]): The set of bids submitted by all players.
+
+        Returns:
+            float: The payment associated with the player's bid.
+        """
         bids_below_own_bid = [b for b in bids if b < own_bid]
         if not bids_below_own_bid: return 0.0
         return np.mean(bids_below_own_bid)
@@ -271,6 +295,7 @@ class MACustomAuctionEnv(BaseAuctionEnv):
             n_players (int): Number of players participating in the auction.
         """
         super().__init__(n_players)
+        self.upper_bound = 2
 
     def step(self, values: list[float], bids: list[float], r: float, t: float) -> list[float]:
         """
@@ -286,11 +311,7 @@ class MACustomAuctionEnv(BaseAuctionEnv):
         Returns:
             list: Rewards assigned to each player.
         """
-        rewards = [0] * self.n_players
-        idx = np.argmax(bids)
-        winner_reward = values[idx] - bids[idx]
-        rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
-        return rewards
+        pass
     
     def reset(self) -> list[float]:
         """
@@ -299,4 +320,4 @@ class MACustomAuctionEnv(BaseAuctionEnv):
         Returns:
             list: New private values for each player.
         """
-        return [random.random() for _ in range(self.n_players)]
+        pass

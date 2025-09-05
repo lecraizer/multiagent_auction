@@ -36,7 +36,7 @@ def generate_grid_actions(grid_N: int, max_revenue: float) -> list:
     Returns:
         list: A list of float bid values based on a perturbed grid.
     """
-    grid_values = np.linspace(0, 0.9, grid_N)
+    grid_values = np.linspace(0, max_revenue, grid_N)
     return [val + random.uniform(0, max_revenue / grid_N) for val in grid_values]
 
 def log_episode(ep: int, obs: list, actions: list, rewards: list, show_gui: bool=True) -> None:
@@ -57,8 +57,9 @@ def log_episode(ep: int, obs: list, actions: list, rewards: list, show_gui: bool
     if show_gui:
         show_auction_episode(obs, actions, rewards)
 
-def save_models_and_update(agents: list, auction_type: str, N: int, r: float, n_episodes: int, ep: int,
-                           loss_history: list, literature_error: list, gif: bool, decrease_factor: float):
+def save_models_and_update(agents: list, auction_type: str, N: int, r: float, n_episodes: int, 
+                           ep: int, loss_history: list, literature_error: list, gif: bool, 
+                           decrease_factor: float):
     """
     Save agent models, update learning parameters, and optionally copy image files for GIF creation.
 

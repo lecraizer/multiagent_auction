@@ -30,7 +30,7 @@ class ReplayBuffer(object):
         from memory at the specified indice.
 
         Args:
-            idx (int or list): The indices of the values to retrieve.
+            idx (int | list): The indices of the values to retrieve.
 
         Returns:
             tuple: A tuple containing states, actions, rewards, others_states and others_actions.
@@ -90,7 +90,7 @@ class ReplayBuffer(object):
             batch_size (int): Number of transitions to retrieve.
 
         Returns:
-            tuple: The last batch_size values (states, actions, rewards, other agents' states, other agents' actions).
+            tuple: The last batch_size values.
         """
         if self.mem_cntr < batch_size: batch_size = self.mem_cntr 
 
