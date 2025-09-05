@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multiagent_auction"                 # ok usar underscore
+version = "0.1.0"
+description = "Multi-agent auction simulations using DRL"
+readme = "README.md"
+requires-python = ">=3.7"
+license = { text = "MIT" }
+
+maintainers = [
+  { name = "Luis Eduardo Craizer", email = "lecraizer@gmail.com" },
+  { name = "Fernanda Gomes", email = "fernandalsgomes06@gmail.com" },
+  { name = "Moacyr Silva Alvim", email = "moacyr.alvim@gmail.com" }
+]
+
+dependencies = [
+  "numpy",
+  "torch",
+  "matplotlib",
+  "gym",
+  "playsound"
+]
+
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/lecraizer/multiagent_auction"
+Issues   = "https://github.com/lecraizer/multiagent_auction/issues"
+
+[project.scripts]
+auction-sim = "multiagent_auction.run:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

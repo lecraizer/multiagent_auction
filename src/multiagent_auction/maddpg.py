@@ -2,8 +2,8 @@ import torch as T
 import numpy as np
 import torch.nn.functional as F
 
-from agent import Agent
-from buffer import ReplayBuffer
+from multiagent_auction.agent import Agent
+from multiagent_auction.buffer import ReplayBuffer
 
 class MADDPG:
     """
@@ -112,11 +112,16 @@ class MADDPG:
         critic_value_ = agent.target_critic.forward(state, target_actions, others_states, others_target_actions)
         critic_value = agent.critic.forward(state, action, others_states, others_actions)
 
-        target = []
-        for j in range(self.batch_size):
-            target.append(reward[j] + self.gamma * critic_value_[j])
-        target = T.tensor(target).to(agent.critic.device)
-        target = target.view(self.batch_size, 1)
+        # alinhar device/dtype e evitar lista em Python
+        dev  = critic_value_.device
+        dtyp = critic_value_.dtype
+
+        # garante que reward está no mesmo device/dtype
+        reward = reward.to(device=dev, dtype=dtyp)
+
+        # target = reward + gamma * critic_value_
+        target = reward + self.gamma * critic_value_.squeeze(-1)
+        target = target.view(self.batch_size, 1)  # (B, 1)
 
         agent.critic.train()
         agent.critic.optimizer.zero_grad()

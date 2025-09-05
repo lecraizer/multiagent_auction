@@ -106,7 +106,7 @@ def main() -> None:
     ])
 
     if not args.force and clear_all:
-        confirm = input("Are you sure you want to clear ALL data? (y/n): ").strip().lower()
+        confirm = input("Are you sure you want to clear all data? (Y/n): ").strip().lower()
         if confirm and confirm not in ['y', 'yes', '']:
             print("❌ Operation cancelled.")
             return

@@ -1,6 +1,6 @@
 import numpy as np
 import torch as T
-from networks import ActorNetwork, CriticNetwork
+from multiagent_auction.networks import ActorNetwork, CriticNetwork
 
 class Agent(object):
     """
@@ -76,17 +76,26 @@ class Agent(object):
             np.ndarray: The selected action.
         """
         self.actor.eval()
-        obs_tensor = T.tensor([observation], dtype=T.float).to(self.actor.device)
-        action = self.actor.forward(obs_tensor, max_revenue).to(self.actor.device)
-        
+        obs_tensor = T.as_tensor(observation, dtype=T.float32, device=self.actor.device)
+        if obs_tensor.dim() == 1:
+            obs_tensor = obs_tensor.unsqueeze(0)
+
+        with T.no_grad():
+            action = self.actor(obs_tensor, max_revenue)
+
         if not evaluation:
-            noise = T.tensor(np.random.normal(0, self.noise_std), dtype=T.float).to(self.actor.device)
+            device = action.device
+            dtype = action.dtype
+            noise = T.normal(mean=0.0, std=self.noise_std, size=action.shape, device=device, dtype=dtype)
             decay = 1 - (episode / self.total_episodes)
-            action  += noise * decay
-            action  = action.clamp(0, max_revenue)
+            action = (action + noise * decay).clamp(0, max_revenue)
 
         self.actor.train()
-        return action.cpu().detach().numpy()
+
+        if action.dim() > 0 and action.size(0) == 1:
+            action = action.squeeze(0)
+
+        return action.detach().cpu().numpy()
 
     def update_network_parameters(self, tau: float|None=None) -> None:
         """

@@ -1,5 +1,5 @@
-from argparser import load_args
-from experiment import AuctionSimulationRunner
+from multiagent_auction.argparser import load_args
+from multiagent_auction.experiment import AuctionSimulationRunner
 
 def main() -> None:
     """

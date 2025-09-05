@@ -84,25 +84,39 @@ class CriticNetwork(Network):
         self.q = nn.Linear(fc2_dims, 1)
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
 
-    def forward(self, state: T.Tensor, action: T.Tensor, others_states: T.Tensor, 
+    def forward(self, state: T.Tensor, action: T.Tensor, others_states: T.Tensor,
                 others_actions: T.Tensor) -> T.Tensor:
-        """
-        Perform the forward pass through the critic network.
-        
-        Args:
-            state (T.Tensor): The current state of the agent.
-            action (T.Tensor): The action taken by the agent.
-            others_states (T.Tensor): States of other agents in the environment.
-            others_actions (T.Tensor): Actions taken by other agents.
-            
-        Returns:
-            T.Tensor: The estimated Q-value for the given state-action combination.
-        """
-        concatenated_inputs  = T.cat([state, action, others_states, others_actions], dim=1)
+        # >>> mínimos ajustes: mesmo device/dtype e 2D (batch, feat)
+        dev  = self.fc1.weight.device
+        dtyp = self.fc1.weight.dtype
+
+        def _prep(x: T.Tensor) -> T.Tensor:
+            if not isinstance(x, T.Tensor):
+                x = T.as_tensor(x, dtype=dtyp, device=dev)
+            else:
+                if x.device != dev:
+                    x = x.to(dev)
+                if x.dtype != dtyp:
+                    x = x.to(dtyp)
+            if x.dim() == 0:
+                x = x.view(1, 1)
+            elif x.dim() == 1:
+                x = x.unsqueeze(0)
+            # se vier com dims > 2, mantemos (assumindo que já é (B, feat,...))
+            # mas se precisar achatar, troque pela linha:
+            # if x.dim() > 2: x = x.view(x.size(0), -1)
+            return x
+
+        state          = _prep(state)
+        action         = _prep(action)
+        others_states  = _prep(others_states)
+        others_actions = _prep(others_actions)
+
+        concatenated_inputs = T.cat([state, action, others_states, others_actions], dim=1)
+
         x = F.relu(self.fc1(concatenated_inputs))
         x = F.relu(self.fc2(x))
-        q_value = self.q(x)
-        return q_value
+        return self.q(x)
 
 class ActorNetwork(Network):
     """
@@ -158,14 +172,23 @@ class ActorNetwork(Network):
 
     def forward(self, state: T.Tensor, max_revenue: float = 1) -> T.Tensor:
         """
-        Perform the forward pass through the actor network.
-        
-        Args:
-            state (T.Tensor): The current state of the agent.
-            
-        Returns:
-            T.Tensor: The action to be taken, with values normalized between 0 and 1.
+        Forward pass. Garante que 'state' seja 2D (batch, feat) e esteja no device certo.
         """
+        # coerção mínima
+        if not isinstance(state, T.Tensor):
+            state = T.as_tensor(state, dtype=T.float32, device=self.fc1.weight.device)
+        else:
+            if state.device != self.fc1.weight.device:
+                state = state.to(self.fc1.weight.device)
+
+        # garantir 2D:
+        if state.dim() == 0:        # escalar -> vira (1,1)
+            state = state.view(1, 1)
+        elif state.dim() == 1:      # vetor -> vira (1, feat)
+            state = state.unsqueeze(0)
+        elif state.dim() > 2:       # qualquer coisa maior -> achata por batch
+            state = state.view(state.size(0), -1)
+
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
-        return T.sigmoid(self.mu(x))*max_revenue
+        return T.sigmoid(self.mu(x)) * max_revenue

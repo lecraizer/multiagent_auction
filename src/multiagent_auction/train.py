@@ -3,9 +3,8 @@ import random
 import shutil
 import timeit
 import numpy as np
-from utils import *
 from datetime import timedelta
-from gui import show_auction_episode
+from multiagent_auction.utils import *
 
 def get_others_states_actions(observations: list, actions: list, idx: int) -> tuple:
     """

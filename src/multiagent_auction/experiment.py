@@ -1,8 +1,8 @@
-from env import *
 import numpy as np
-from train import *
-from evaluation import *
-from maddpg import MADDPG
+from multiagent_auction.env import *
+from multiagent_auction.train import *
+from multiagent_auction.evaluation import *
+from multiagent_auction.maddpg import MADDPG
 
 class AuctionSimulationRunner:
     def __init__(self, 
