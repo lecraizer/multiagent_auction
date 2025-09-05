@@ -1,29 +1,40 @@
 import random
 import numpy as np
-from gym import Env
-from gym.spaces import Box
 
 import warnings
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-class BaseAuctionEnv(Env):
+class BaseAuctionEnv():
     """
     Implement a base auction environment.
     """
-    def __init__(self, n_players:int, bid_dim:int=1, obs_dim:int=1):
+    def __init__(self, n_players:int, upper_bound:float=1):
         """
         Initialize the auction environment.
 
         Args:
             n_players (int): Number of players participating in the auction.
-            bid_dim (int): Dimension of the bid of each player.
-            obs_dim (int): Dimension of the observation space for each player.
+            upper_bound (float): Upper bound of action space.
         """
         self.n_players = n_players
-        self.bid_space = Box(low=np.zeros(bid_dim), high=np.ones(bid_dim), dtype=np.float32)
-        self.observation_space = Box(low=np.zeros(obs_dim), high=np.ones(obs_dim), dtype=np.float32)
-        self.states_shape = self.observation_space.shape
+        self.upper_bound = upper_bound
+    
+    def value_paid(self, own_bid: float, bids: float):
+        """
+        Compute the amount paid by a player in the auction.
+
+        By default, the value paid is simply the player's own bid.
+        This method can be overridden by subclasses to implement 
+        different payment rules.
+        Args:
+            own_bid (float): The bid submitted by the player.
+            bids (float): The set of bids in the auction.
+
+        Returns:
+            float: The amount paid by the player.
+        """
+        return own_bid
 
 class MAFirstPriceAuctionEnv(BaseAuctionEnv):
     """
@@ -40,7 +51,7 @@ class MAFirstPriceAuctionEnv(BaseAuctionEnv):
         """
         super().__init__(n_players)
 
-    def reward_n_players(self, values: list, bids: list, r: float, t: float) -> list:
+    def step(self, values: list[float], bids: list[float], r: float, t: float) -> list[float]:
         """
         Calculate rewards for all players based on their private values and bids.
         
@@ -58,21 +69,7 @@ class MAFirstPriceAuctionEnv(BaseAuctionEnv):
         rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
         return rewards
 
-    def step(self, states: list, actions: list, r: float, t: float) -> list:
-        """
-        Execute a step in the environment.
-        
-        Args:
-            states (list): Private values for each player.
-            actions (list): Bids made by each player.
-            r (float): Risk adjustment parameter.
-        
-        Returns:
-            list: Rewards for each player.
-        """
-        return self.reward_n_players(states, actions, r, t)
-
-    def reset(self) -> list:
+    def reset(self) -> list[float]:
         """
         Reset the environment, generating new random private values for each player.
         
@@ -83,9 +80,10 @@ class MAFirstPriceAuctionEnv(BaseAuctionEnv):
 
 class MASecondPriceAuctionEnv(BaseAuctionEnv):
     """
-    Implement a second-price auction environment. The agent with the highest bid wins the auction
-    and pays the second-highest bid, receiving a reward based on the difference between 
-    their private value and the second-highest bid.
+    Implement a second-price auction environment. 
+    The agent with the highest bid wins the auction and pays the second-highest bid, 
+    receiving a reward based on the difference between their private value and the 
+    second-highest bid.
     """
     def __init__(self, n_players: int) -> None:
         """
@@ -96,7 +94,7 @@ class MASecondPriceAuctionEnv(BaseAuctionEnv):
         """
         super().__init__(n_players)
 
-    def reward_n_players(self, values: list, bids: list, r: float, t: float) -> list:
+    def step(self, values: list[float], bids: list[float], r: float, t: float) -> list[float]:
         """
         Calculate the rewards for all players based on their bids and private values.
         The player with the highest bid wins the auction but pays the second-highest bid.
@@ -116,21 +114,7 @@ class MASecondPriceAuctionEnv(BaseAuctionEnv):
         rewards[max_idx] = winner_reward**r if winner_reward > 0 else winner_reward
         return rewards
 
-    def step(self, states: list, actions: list, r: float, t: float) -> list:
-        """
-        Execute a step in the environment.
-
-        Args:
-            states (list): Private values for each player.
-            actions (list): Bids submitted by each player.
-            r (float): Risk adjustment parameter.
-
-        Returns:
-            list: Rewards for each player.
-        """
-        return self.reward_n_players(states, actions, r, t)
-
-    def reset(self) -> list:
+    def reset(self) -> list[float]:
         """
         Reset the environment by generating new private values for each player.
 
@@ -138,26 +122,44 @@ class MASecondPriceAuctionEnv(BaseAuctionEnv):
             list: New private values for each player.
         """
         return [random.random() for _ in range(self.n_players)]
+    
+    def value_paid(self, own_bid: float, bids: list[float]) -> float:
+        """
+        Compute the effective payment of a player in the second-price auction.
+        The payment is defined as the average of all 
+        bids strictly lower than the player's own bid. If the player's bid is 
+        the lowest, the payment is zero.
+
+        Args:
+            own_bid (float): The bid submitted by the player.
+            bids (list[float]): The set of bids submitted by all players.
+
+        Returns:
+            float: The payment associated with the player's bid.
+        """
+        bids_below_own_bid = [b for b in bids if b < own_bid]
+        if not bids_below_own_bid: return 0.0
+        return np.mean(bids_below_own_bid)
 
 
 class MATariffDiscountEnv(BaseAuctionEnv):
     """
-    Implement a first-price auction environment. The agent with the highest bid wins the auction
+    Implement a first-price auction environment. 
+    The agent with the highest bid wins the auction
     and receives a reward based on the difference between maximum revenue and 
     their bid, adjusted by their costs.
     """
-    def __init__(self, n_players: int, max_revenue: float) -> None:
+    def __init__(self, n_players: int) -> None:
         """
         Initialize the tariff discount auction environment.
 
         Args:
             n_players (int): Number of players participating in the auction.
-            max_revenue (float): Maximum revenue that can be achieved in the auction.
         """
         super().__init__(n_players)
-        self.max_revenue = max_revenue
+        self.upper_bound = 3
 
-    def reward_n_players(self, costs: list, bids: list, r: float) -> list:
+    def step(self, costs: list[float], bids: list[float], r: float) -> list[float]:
         """
         Calculate the rewards for all players based on their bids and private costs.
         The player with the highest bid wins the auction. 
@@ -172,32 +174,19 @@ class MATariffDiscountEnv(BaseAuctionEnv):
         """
         rewards = [0] * self.n_players
         idx = np.argmax(bids)
-        winner_reward = self.max_revenue * (1 - bids[idx]) - costs[idx]
+        winner_reward = self.upper_bound * (1 - bids[idx]) - costs[idx]
         rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
         return rewards
 
-    def step(self, states: list, actions: list, r: float) -> list:
-        """
-        Execute a step in the environment.
-
-        Args:
-            states (list): Private cost values for each player.
-            actions (list): Bids submitted by each player.
-
-        Returns:
-            list: Rewards for each player.
-        """
-        return self.reward_n_players(states, actions, r)
-
-    def reset(self) -> list:
+    def reset(self) -> list[float]:
         """
         Reset the environment by generating new private cost values for each player.
-        Each cost is randomly sampled from a uniform distribution in the range [0, max_revenue].
+        Each cost is randomly sampled from a uniform distribution in the range [0, upper_bound].
 
         Returns:
             list: New private costs for each player.
         """
-        return [random.random() * self.max_revenue for _ in range(self.n_players)]
+        return [random.random() * self.upper_bound for _ in range(self.n_players)]
 
 
 class MAAllPayAuctionEnv(BaseAuctionEnv):
@@ -215,7 +204,7 @@ class MAAllPayAuctionEnv(BaseAuctionEnv):
         """
         super().__init__(n_players)
 
-    def reward_n_players(self, values: list, bids: list, r: float, t: float) -> list:
+    def step(self, values: list[float], bids: list[float], r: float, t: float) -> list[float]:
         """
         Calculate the reward of all players based on their private values and bids.
         
@@ -234,21 +223,7 @@ class MAAllPayAuctionEnv(BaseAuctionEnv):
         rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
         return rewards
 
-    def step(self, states: list, actions: list, r: float, t: float) -> list:
-        """
-        Execute a step in the environment.
-        
-        Args:
-            states (list): Private values of each player.
-            actions (list): Bids made by each player.
-            r (float): Risk adjustment parameter.
-        
-        Returns:
-            list: Reward of each player.
-        """
-        return self.reward_n_players(states, actions, r, t)
-
-    def reset(self) -> list:
+    def reset(self) -> list[float]:
         """
         Reset the environment, generating new random private values for each player.
         
@@ -259,56 +234,90 @@ class MAAllPayAuctionEnv(BaseAuctionEnv):
 
 
 class MAPartialAllPayAuctionEnv(BaseAuctionEnv):
-    '''
-    All-Pay Auction with a parameter t:
-    - t = 0: First-Price Auction
-    - t = 1: All-Pay Auction
-    - 0 < t < 1: Hybrid Auction
-    '''
-    def __init__(self, n_players):
+    """
+    Implement a partial all-pay auction environment for multiple agents.
+    This environment generalizes between first-price and all-pay auctions
+    using a parameter `t`:
+
+    - t = 0: Equivalent to a first-price auction (only the winner pays).
+    - t = 1: Equivalent to an all-pay auction (all players pay their bids).
+    - 0 < t < 1: Hybrid auction where players partially pay their bids
+      according to the value of `t`.
+    """
+    def __init__(self, n_players: int) -> None:
+        """
+        Initialize the partial all-pay auction environment.
+
+        Args:
+            n_players (int): Number of players participating in the auction.
+        """
         super().__init__(n_players)
 
-    def reward_n_players(self, values, bids, r, t):
+    def step(self, values: list[float], bids: list[float], r: float, t: float) -> list[float]:
+        """
+        Calculate the rewards for all players based on their bids and private values.
+        The parameter `t` controls how much of each bid is paid regardless of winning.
+
+        Args:
+            values (list): Private values for each player.
+            bids (list): Bids submitted by each player.
+            r (float): Risk adjustment parameter.
+            t (float): Payment parameter controlling the fraction of the bid
+                       paid by all players (0 = first-price, 1 = all-pay).
+
+        Returns:
+            list: Rewards assigned to each player.
+        """
         rewards = [-b*t for b in bids]
         idx = np.argmax(bids)
         winner_reward = values[idx] - bids[idx]
         rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
         return rewards
-
-    def step(self, states, actions, r, t):
-        return self.reward_n_players(states, actions, r, t)
     
-    def reset(self):
+    def reset(self) -> list[float]:
+        """
+        Reset the environment by generating new private values for each player.
+
+        Returns:
+            list: New private values for each player, uniformly sampled from [0,1].
+        """
         return [random.random() for _ in range(self.n_players)]
 
-class MAScoreAuctionEnv(Env):
+class MACustomAuctionEnv(BaseAuctionEnv):
     """
-    Score Auction:
-    - Each agent has (value, cost)
-    - Submits (bid, effort)
-    - Score = effort - bid
-    - Reward = value - bid - effort * cost
+    Implement a custom auction.
     """
-    def __init__(self, n_players):
-        self.n_players = n_players
-        self.bid_space = Box(low=np.array([0, 0]), high=np.array([1, 1]), dtype=np.float32)
-        self.observation_space = Box(low=np.array([0, 0]), high=np.array([1, 1]), dtype=np.float32)
-        self.states_shape = (self.n_players, 2)
+    def __init__(self, n_players: int) -> None:
+        """
+        Initialize the auction environment.
 
-    def score_function(self, bid, effort):
-        return effort - bid
+        Args:
+            n_players (int): Number of players participating in the auction.
+        """
+        super().__init__(n_players)
+        self.upper_bound = 2
 
-    def reward_n_players(self, values_costs, actions):
-        scores = [self.score_function(b, e) for (b, e) in actions]
-        idx = np.argmax(scores)
-        value, cost = values_costs[idx]
-        bid, effort = actions[idx]
-        rewards = [0.0] * self.n_players
-        rewards[idx] = value - bid - effort * cost
-        return rewards
+    def step(self, values: list[float], bids: list[float], r: float, t: float) -> list[float]:
+        """
+        Calculate the rewards for all players based on their bids and private values.
 
-    def step(self, states, actions):
-        return self.reward_n_players(states, actions)
+        Args:
+            values (list): Private values for each player.
+            bids (list): Bids submitted by each player.
+            r (float): Risk adjustment parameter.
+            t (float): Payment parameter controlling the fraction of the bid
+                       paid by all players (0 = first-price, 1 = all-pay).
 
-    def reset(self):
-        return [(random.random(), random.random()) for _ in range(self.n_players)]
+        Returns:
+            list: Rewards assigned to each player.
+        """
+        pass
+    
+    def reset(self) -> list[float]:
+        """
+        Reset the environment by generating new private values for each player.
+
+        Returns:
+            list: New private values for each player.
+        """
+        pass

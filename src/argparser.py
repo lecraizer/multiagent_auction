@@ -1,6 +1,6 @@
 import json
 
-def load_args():
+def load_args() -> tuple:
     """
     Load parameters from json file.
     """
@@ -20,9 +20,7 @@ def load_args():
         config["ponderated"],
         config["aversion_coef"],
         config["save"],
-        config["alert"],
         config["transfer_learning"],
         config["extra_players"],
-        config["executions"],
         config["show_gui"]
     )

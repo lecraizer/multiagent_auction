@@ -36,7 +36,7 @@ def generate_grid_actions(grid_N: int, max_revenue: float) -> list:
     Returns:
         list: A list of float bid values based on a perturbed grid.
     """
-    grid_values = np.linspace(0, 0.9, grid_N)
+    grid_values = np.linspace(0, max_revenue, grid_N)
     return [val + random.uniform(0, max_revenue / grid_N) for val in grid_values]
 
 def log_episode(ep: int, obs: list, actions: list, rewards: list, show_gui: bool=True) -> None:
@@ -57,8 +57,9 @@ def log_episode(ep: int, obs: list, actions: list, rewards: list, show_gui: bool
     if show_gui:
         show_auction_episode(obs, actions, rewards)
 
-def save_models_and_update(agents: list, auction_type: str, N: int, r: float, n_episodes: int, ep: int,
-                           loss_history: list, literature_error: list, gif: bool, decrease_factor: float):
+def save_models_and_update(agents: list, auction_type: str, N: int, r: float, n_episodes: int, 
+                           ep: int, loss_history: list, literature_error: list, gif: bool, 
+                           decrease_factor: float):
     """
     Save agent models, update learning parameters, and optionally copy image files for GIF creation.
 
@@ -93,8 +94,6 @@ def MAtrainLoop(maddpg,
                 auction_type: str='first_price', 
                 r: float=1, 
                 t: float = 1,
-                max_revenue: float=1, 
-                gam:float=1, 
                 gif: bool=False, 
                 save_interval: int=10,
                 tl_flag: bool=False, 
@@ -110,7 +109,6 @@ def MAtrainLoop(maddpg,
         auction_type (str): Type of auction.
         r (float): Reward shaping parameter.
         max_revenue (float): Maximum theoretical revenue for grid action sampling.
-        gam (float): Discount factor for evaluation.
         gif (bool): Whether to generate GIF snapshots during training.
         save_interval (int): Interval (in episodes) at which to log and save models.
         tl_flag (bool): Whether to enable transfer learning.
@@ -133,7 +131,7 @@ def MAtrainLoop(maddpg,
 
         for idx in range(N):
             others_obs, others_actions = get_others_states_actions(observations, original_actions, idx)
-            grid_actions = generate_grid_actions(grid_N, max_revenue)
+            grid_actions = generate_grid_actions(grid_N, env.upper_bound)
 
             for new_action in grid_actions:
                 test_actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
@@ -147,7 +145,7 @@ def MAtrainLoop(maddpg,
             log_episode(ep, observations, original_actions, original_rewards, show_gui)
 
             hist = manualTesting(agents, N, ep, n_episodes, auc_type=auction_type, r=r, t=t,
-                                 max_revenue=max_revenue, gam=gam)
+                                 max_revenue=env.upper_bound)
             literature_error.append(np.mean(hist))
             if batch_loss:
                 loss_history.append(np.mean(batch_loss))

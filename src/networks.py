@@ -71,7 +71,8 @@ class CriticNetwork(Network):
             n_agents (int, optional): Number of agents in the environment. Defaults is 2.
             chkpt_dir (str, optional): Directory for checkpoint files. Defaults is 'models/critic'.
             flag (bool, optional): Flag to modify input shape calculation. Defaults is False.
-            extra (int, optional): Additional value to adjust input shape when flag is True. Defaults is 0.
+            extra (int, optional): Additional value to adjust input shape when flag is True. 
+                                   Defaults is 0.
         """
         super(CriticNetwork, self).__init__(name, chkpt_dir)
         self.type = 'critic'
@@ -83,7 +84,8 @@ class CriticNetwork(Network):
         self.q = nn.Linear(fc2_dims, 1)
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
 
-    def forward(self, state: T.Tensor, action: T.Tensor, others_states: T.Tensor, others_actions: T.Tensor) -> T.Tensor:
+    def forward(self, state: T.Tensor, action: T.Tensor, others_states: T.Tensor, 
+                others_actions: T.Tensor) -> T.Tensor:
         """
         Perform the forward pass through the critic network.
         
@@ -127,7 +129,8 @@ class ActorNetwork(Network):
             n_actions (int): Dimensionality of the action space.
             name (str): Name identifier for the network.
             n_agents (int, optional): Number of agents in the environment. Defaults is 2.
-            chkpt_dir (str, optional): Directory for checkpoint files. Defaults is 'models/actor'.
+            chkpt_dir (str, optional): Directory for checkpoint files. 
+                                       Defaults is 'models/actor'.
         """
         super(ActorNetwork, self).__init__(name, chkpt_dir)
         self.type = 'actor'
@@ -153,7 +156,7 @@ class ActorNetwork(Network):
         T.nn.init.uniform_(layer.weight.data, -limit, limit)
         T.nn.init.uniform_(layer.bias.data, -limit, limit)
 
-    def forward(self, state: T.Tensor) -> T.Tensor:
+    def forward(self, state: T.Tensor, max_revenue: float = 1) -> T.Tensor:
         """
         Perform the forward pass through the actor network.
         
@@ -165,4 +168,4 @@ class ActorNetwork(Network):
         """
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
-        return T.sigmoid(self.mu(x))
+        return T.sigmoid(self.mu(x))*max_revenue

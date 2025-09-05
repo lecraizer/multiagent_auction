@@ -84,13 +84,20 @@ def main() -> None:
         --tmp-only      (bool): Clear only temporary PNGs.
         --cache-only    (bool): Clear only Python cache files.
     """
-    parser = argparse.ArgumentParser(description='Clear saved data and generated files for auction experiments.')
-    parser.add_argument('--force', action='store_true', help='Clear everything without confirmation prompt')
-    parser.add_argument('--models-only', action='store_true', help='Clear only models (actor/critic)')
-    parser.add_argument('--results-only', action='store_true', help='Clear only auction result folders')
-    parser.add_argument('--gifs-only', action='store_true', help='Clear only GIFs folder')
-    parser.add_argument('--tmp-only', action='store_true', help='Clear only temporary PNGs for gif creation')
-    parser.add_argument('--cache-only', action='store_true', help='Clear only Python __pycache__ and .pyc/.pyo files')
+    parser = argparse.ArgumentParser(description=
+                                     'Clear saved data and generated files for auction experiments.')
+    parser.add_argument('--force', action='store_true', 
+                        help='Clear everything without confirmation prompt')
+    parser.add_argument('--models-only', action='store_true', 
+                        help='Clear only models (actor/critic)')
+    parser.add_argument('--results-only', action='store_true', 
+                        help='Clear only auction result folders')
+    parser.add_argument('--gifs-only', action='store_true', 
+                        help='Clear only GIFs folder')
+    parser.add_argument('--tmp-only', action='store_true', 
+                        help='Clear only temporary PNGs for gif creation')
+    parser.add_argument('--cache-only', action='store_true', 
+                        help='Clear only Python __pycache__ and .pyc/.pyo files')
 
     args = parser.parse_args()
 
@@ -98,27 +105,17 @@ def main() -> None:
         args.models_only, args.results_only, args.gifs_only, args.tmp_only, args.cache_only
     ])
 
-    # Confirmation prompt (Y/n)
     if not args.force and clear_all:
         confirm = input("Are you sure you want to clear ALL data? (y/n): ").strip().lower()
         if confirm and confirm not in ['y', 'yes', '']:
             print("❌ Operation cancelled.")
             return
 
-    if args.models_only or clear_all:
-        clear_models()
-
-    if args.results_only or clear_all:
-        clear_results()
-
-    if args.gifs_only or clear_all:
-        clear_gifs()
-
-    if args.tmp_only or clear_all:
-        clear_tmp()
-
-    if args.cache_only or clear_all:
-        clear_pycache()
+    if args.models_only or clear_all: clear_models()
+    if args.results_only or clear_all: clear_results()
+    if args.gifs_only or clear_all: clear_gifs()
+    if args.tmp_only or clear_all: clear_tmp()
+    if args.cache_only or clear_all: clear_pycache()
 
     print("\n✅ Done.")
 
