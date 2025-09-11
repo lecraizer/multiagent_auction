@@ -26,7 +26,7 @@ pip install -r requirements.txt
 #### To execute the program, just type the following line on the root directory 
 
 ```bash
-python src/run.py
+python src/multiagent_auction/run.py
 ```
 
 ## Acknowledgement
