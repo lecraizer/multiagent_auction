@@ -13,19 +13,20 @@ class MADDPG:
     Each agent is trained using actor-critic methods, considering both its own state and
     the states and actions of other agents.
 
-    Parameters:
-    - alpha, beta (float): learning rates for actor and critic networks.
-    - input_dims (int): dimension of the input state.
-    - tau (float): soft update parameter for target networks.
-    - gamma (float): discount factor for future rewards.
-    - BS (int): batch size.
-    - fc1, fc2 (int): number of neurons in hidden layers.
-    - n_actions (int): number of actions per agent.
-    - n_agents (int): number of agents in the environment.
-    - total_eps (int): total number of training episodes.
-    - noise_std (float): standard deviation of Gaussian noise for exploration.
-    - tl_flag (bool): boolean flag for transfer learning.
-    - extra_players (int): number of "ghost" agents to be added.
+    Args:
+        alpha (float): Learning rate for actor network.
+        beta (float): Learning rate for critic network.
+        input_dims (int): Dimension of the input state.
+        tau (float): Soft update parameter for target networks.
+        gamma (float): Discount factor for future rewards.
+        BS (int): Batch size.
+        fc1, fc2 (int): Number of neurons in hidden layers.
+        n_actions (int): Number of actions per agent.
+        n_agents (int): Number of agents in the environment.
+        total_eps (int): Total number of training episodes.
+        noise_std (float): Standard deviation of Gaussian noise for exploration.
+        tl_flag (bool): Boolean flag for transfer learning.
+        extra_players (int): Number of "ghost" agents to be added.
     """
     
     def __init__(self,
@@ -129,7 +130,8 @@ class MADDPG:
         critic_loss.backward()
         agent.critic.optimizer.step()
 
-    def _train_actor(self, agent, idx: int, state: T.tensor, others_states: T.tensor, flag: bool, num_tiles: int) -> None:
+    def _train_actor(self, agent, idx: int, state: T.tensor, others_states: T.tensor, flag: bool, 
+                     num_tiles: int) -> None:
         """
         Trains the actor network of a given agent.
 

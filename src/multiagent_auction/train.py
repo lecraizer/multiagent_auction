@@ -56,9 +56,8 @@ def log_episode(ep: int, obs: list, actions: list, rewards: list, show_gui: bool
     if show_gui:
         show_auction_episode(obs, actions, rewards)
 
-def save_models_and_update(agents: list, auction_type: str, N: int, r: float, n_episodes: int, 
-                           ep: int, loss_history: list, literature_error: list, gif: bool, 
-                           decrease_factor: float):
+def save_models_and_update(agents: list, auction_type: str, N: int, r: float, n_episodes: int, ep: int, 
+                           loss_history: list, literature_error: list, gif: bool, decrease_factor: float):
     """
     Save agent models, update learning parameters, and optionally copy image files for GIF creation.
 

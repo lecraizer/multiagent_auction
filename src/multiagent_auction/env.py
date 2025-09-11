@@ -23,7 +23,6 @@ class BaseAuctionEnv():
     def value_paid(self, own_bid: float, bids: float):
         """
         Compute the amount paid by a player in the auction.
-
         By default, the value paid is simply the player's own bid.
         This method can be overridden by subclasses to implement 
         different payment rules.
