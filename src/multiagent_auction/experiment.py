@@ -15,7 +15,6 @@ class AuctionSimulationRunner:
                  n_players: int, 
                  t: float,
                  noise_std: float,
-                 ponderated_avg: bool, 
                  aversion_coef: float,
                  save_plot: bool,
                  tl: bool, 
@@ -32,7 +31,6 @@ class AuctionSimulationRunner:
             create_gif (bool): Whether to save training GIFs.
             n_players (int): Initial number of agents.
             noise_std (float): Standard deviation for action noise.
-            ponderated_avg (bool): Use ponderated averages in evaluation.
             aversion_coef (float): Risk aversion coefficient.
             save_plot (bool): Whether to save evaluation plots.
             tl (bool): Enable transfer learning.
@@ -47,7 +45,6 @@ class AuctionSimulationRunner:
         self.n_players = n_players
         self.t = t
         self.noise_std = noise_std
-        self.ponderated_avg = ponderated_avg
         self.aversion_coef = aversion_coef
         self.save_plot = save_plot
         self.tl = tl
@@ -161,4 +158,4 @@ class AuctionSimulationRunner:
         if self.trained and not self.tl:
             print('Evaluating models...')
             self.load_agents(maddpg, self.n_players)
-            evaluate_agents(env, maddpg.agents, n_bids=100, grid_precision=100, auc_type=self.auction)
+            evaluate_agents(env, maddpg.agents, n_bids=100, grid_precision=100)

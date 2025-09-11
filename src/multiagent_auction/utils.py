@@ -1,10 +1,10 @@
 import os
 import glob
+import imageio
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plotLearning(auction_scores: list[float], filename: str, labels: list = None, 
-                 window: int = 5) -> None:
+def plotLearning(auction_scores: list[float], filename: str, labels: list = None, window: int = 5) -> None:
     '''
     Plots the moving average of auction scores over the games and saves the generated plot.
 
@@ -14,9 +14,6 @@ def plotLearning(auction_scores: list[float], filename: str, labels: list = None
         labels (list): A list of labels for the x-axis. If None, it uses the game indices.
         window (int): The number of games to consider for calculating the moving average. 
                       Default is 5.
-
-    Returns:
-        None: The function saves the plot as an image file.
     '''
     n_games = len(auction_scores)
     running_avg = np.array([np.mean(auction_scores[max(0, t-window):(t+1)]) 
@@ -103,7 +100,7 @@ def calculate_agents_actions(agents: list, N: int, episode: int, auc_type: str, 
         episode (int): The current training episode.
         auc_type (str): The type of auction.
         r (float): A parameter used in specific auction types.
-        max_revenue (float): The maximum possible revenue (used in some auction types).
+        max_revenue (float): The maximum possible revenue.
 
     Returns:
         tuple: 
@@ -209,7 +206,7 @@ def manualTesting(agents: list, N: int, episode: int, n_episodes: int, auc_type:
 
     Args:
         env:
-        agents (list): A list of agent objects.
+        agents (list): List of agent objects.
         N (int): The number of agents.
         episode (int): The current episode.
         n_episodes (int): Total number of episodes.
