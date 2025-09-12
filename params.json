@@ -2,7 +2,7 @@
   "auction": "first_price",
   "target_auction": "all_pay",
   "trained": 0,
-  "episodes": 200,
+  "episodes": 2000,
   "players": 2,
   "aversion_coef": 1.0,
   "transfer_learning": 1,
@@ -10,10 +10,7 @@
   "extra_players": 0,
   "batch": 64,
   "noise": 0.2,
-  "ponderated": 100,
   "save": false,
   "gif": false,
-  "alert": true,
-  "executions": 1,
   "show_gui": false
 }
