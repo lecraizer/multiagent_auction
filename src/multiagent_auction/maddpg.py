@@ -74,7 +74,7 @@ class MADDPG:
         tiled = np.tile(first_column, (1, num_tiles))
         return np.concatenate([array, tiled], axis=1)
 
-    def _get_others_actions(self, idx: int, others_states: T.tensor, network: str='target_actor') -> T.tensor:
+    def _get_others_actions(self, idx: int, others_states: T.tensor, auction_type: str, network: str='target_actor') -> T.tensor:
         """
         Computes the actions of all agents except the one with index `idx`.
 
@@ -92,7 +92,7 @@ class MADDPG:
         for i in range(len(indexes)):
             state_col = others_states[:, i].reshape(-1, 1)
             agent_net = getattr(self.agents[indexes[i]], network)
-            actions.append(agent_net.forward(state_col))
+            actions.append(agent_net.forward(state_col, auction_type=auction_type))
         return T.cat(actions, dim=1)
 
     def _train_critic(self, agent, state: T.tensor, action: T.tensor, reward: T.tensor, others_states: T.tensor, 
@@ -129,7 +129,7 @@ class MADDPG:
         critic_loss.backward()
         agent.critic.optimizer.step()
 
-    def _train_actor(self, agent, idx: int, state: T.tensor, others_states: T.tensor, flag: bool, num_tiles: int) -> None:
+    def _train_actor(self, agent, idx: int, state: T.tensor, others_states: T.tensor, flag: bool, num_tiles: int, auction_type: str) -> None:
         """
         Trains the actor network of a given agent.
 
@@ -145,9 +145,9 @@ class MADDPG:
         """
         agent.critic.eval()
         agent.actor.optimizer.zero_grad()
-        mu = agent.actor.forward(state)
+        mu = agent.actor.forward(state, auction_type=auction_type)
 
-        others_mus = self._get_others_actions(idx, others_states, network='target_actor')
+        others_mus = self._get_others_actions(idx, others_states, auction_type=auction_type, network='target_actor')
         if flag:
             first_column_others_mus = others_mus[:, 0].unsqueeze(1)
             tiled_others_mus = T.cat([first_column_others_mus] * num_tiles, dim=1)
@@ -160,7 +160,7 @@ class MADDPG:
         agent.actor.optimizer.step()
         agent.update_network_parameters()
 
-    def _learn_from_memory(self, memory, idx: int, flag: bool, num_tiles: int) -> None:
+    def _learn_from_memory(self, memory, idx: int, flag: bool, num_tiles: int, auction_type: str) -> None:
         """
         Executes one learning step using the given memory buffer.
 
@@ -192,9 +192,9 @@ class MADDPG:
         agent.target_critic.eval()
         agent.critic.eval()
 
-        target_actions = agent.target_actor.forward(state)
+        target_actions = agent.target_actor.forward(state, auction_type=auction_type)
 
-        others_target_actions = self._get_others_actions(idx, others_states, network='target_actor')
+        others_target_actions = self._get_others_actions(idx, others_states, auction_type=auction_type, network='target_actor')
         if flag:
             first_column = others_target_actions[:, 0].unsqueeze(1)
             tiled = T.cat([first_column] * num_tiles, dim=1)
@@ -203,7 +203,7 @@ class MADDPG:
         self._train_critic(agent, state, action, reward, others_states, others_actions,
                            target_actions, others_target_actions)
 
-        self._train_actor(agent, idx, state, others_states, flag, num_tiles)
+        self._train_actor(agent, idx, state, others_states, flag, num_tiles, auction_type=auction_type)
 
     def remember(self, state: T.tensor, action: T.tensor, reward: T.tensor, others_states: T.tensor, 
                  others_actions: T.tensor) -> None:
@@ -217,7 +217,7 @@ class MADDPG:
         self.memory.store_transition(state, action, reward, others_states, others_actions)
         self.short_memory.store_transition(state, action, reward, others_states, others_actions)
 
-    def learn(self, idx: int, flag: bool=False, num_tiles: int=3) -> None:
+    def learn(self, auction_type, idx: int, flag: bool=False, num_tiles: int=3) -> None:
         """
         Performs a learning step for the agent with index `idx`.
 
@@ -228,5 +228,5 @@ class MADDPG:
             flag (bool): Whether to use ghost agents
             num_tiles (int): Number of ghost agents to add
         """
-        self._learn_from_memory(self.memory, idx, flag, num_tiles)
-        self._learn_from_memory(self.short_memory, idx, flag, num_tiles)
+        self._learn_from_memory(self.memory, idx, flag, num_tiles, auction_type=auction_type)
+        self._learn_from_memory(self.short_memory, idx, flag, num_tiles, auction_type=auction_type)

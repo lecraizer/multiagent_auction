@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "multiagent_auction"                 # ok usar underscore
-version = "0.1.0"
+version = "0.1.1"
 description = "Multi-agent auction simulations using DRL"
 readme = "README.md"
 requires-python = ">=3.7"

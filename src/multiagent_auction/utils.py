@@ -1,7 +1,53 @@
 import os
-import glob
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
+
+
+def calculate_all_pay_optimal_bid(states, n_agents, r):
+    '''
+    Calculates the optimal bid for the all-pay auction using the ivp solver.
+    '''
+    states = np.asarray(states, dtype=float)
+
+    if np.isclose(r, 1.0):
+        return ((n_agents - 1) / n_agents) * states**n_agents
+
+    eps = 1e-6
+
+    def ode(v, y):
+        b = max(float(y[0]), eps)
+        surplus = max(v - b, eps)
+
+        numerator = (
+            ((n_agents - 1) / r)
+            * v**(n_agents - 2)
+            * (surplus**r + b**r)
+        )
+
+        denominator = (
+            v**(n_agents - 1) * surplus**(r - 1)
+            + (1 - v**(n_agents - 1)) * b**(r - 1)
+        )
+
+        return [numerator / denominator]
+
+    positive_states = states[states >= eps]
+
+    solution = solve_ivp(
+        ode,
+        (eps, float(states.max())),
+        [((n_agents - 1) / n_agents) * eps**n_agents],
+        t_eval=positive_states
+    )
+
+    expected = np.zeros_like(states)
+    expected[states >= eps] = solution.y[0]
+
+    return expected
+
 
 def plotLearning(auction_scores: list[float], filename: str, labels: list = None, 
                  window: int = 5) -> None:
@@ -55,7 +101,7 @@ def decrease_learning_rate(agents: list, decrease_factor: float) -> None:
                     agent.target_actor.optimizer, agent.target_critic.optimizer]:
             for group in opt.param_groups:
                 group['lr'] *= decrease_factor
-    print('Learning rate: ', group['lr'])
+    print(f"Learning Rate: {group['lr']:.6f}")
 
 def calculate_expected_action(n_agents: int, auc_type: str, states: np.ndarray, r: float, t: float, 
                               max_revenue: float) -> list:
@@ -81,7 +127,7 @@ def calculate_expected_action(n_agents: int, auc_type: str, states: np.ndarray, 
     elif auc_type == 'common_value':
         expected = states
     elif auc_type == 'all_pay':
-        expected = [(s**n_agents) * (n_agents - 1) / n_agents for s in states]
+        expected = calculate_all_pay_optimal_bid(states, n_agents, r)
     elif auc_type == 'partial_all_pay':
         numerator = [(v**n_agents) * (n_agents - 1) / n_agents for v in states]
         denominator = [t + (1 - t) * (v**(n_agents - 1)) for v in states]
@@ -121,7 +167,8 @@ def calculate_agents_actions(agents: list, N: int, episode: int, auc_type: str, 
         expected_action = calculate_expected_action(N, auc_type, states, r, t, max_revenue)
         agent_error = np.mean(np.abs(np.array(actions) - np.array(expected_action)))
         avg_error += agent_error
-        print(f'Avg error agent {k + 1}: {agent_error:.3f}')
+        print(f'Avg error agent {k + 1}: {agent_error:.2f}')
+    print("-"*40)
 
     return states, agents_actions, avg_error/N
 
@@ -174,7 +221,7 @@ def plot_expected_bid_curve(states: np.ndarray, auc_type: str, N: int, r: float,
         count_zeros (int): The number of agents with zero bids.
     '''
     def _plot(y_vals, label_suffix='', color='#AD1515', linestyle='-', linewidth=1.0, alpha=1.0):
-        plt.plot(states, y_vals, label=f'Expected bid{label_suffix}', color=color,
+        plt.plot(states, y_vals, label=f'Expected bid {label_suffix}', color=color,
                  linestyle=linestyle, linewidth=linewidth, alpha=alpha)
     match auc_type:
         case  'first_price'| 'joint_first_price':
@@ -186,7 +233,8 @@ def plot_expected_bid_curve(states: np.ndarray, auc_type: str, N: int, r: float,
         case 'common_value':
             _plot(states)
         case 'all_pay':
-            _plot((states**N) * (N - 1) / N, label_suffix=f' N={N}')
+            expected = calculate_all_pay_optimal_bid(states, N, r)
+            _plot(expected, label_suffix=f' N={N}, r={r}')
             active_agents = N - count_zeros
             if 0 < active_agents < N:
                 alt_exp = [(s**active_agents) * (active_agents - 1) / active_agents for s in states]
@@ -202,7 +250,7 @@ def plot_expected_bid_curve(states: np.ndarray, auc_type: str, N: int, r: float,
                       linewidth=0.5, alpha=0.5)
             
 def manualTesting(agents: list, N: int, episode: int, n_episodes: int, auc_type: str = 'first_price', 
-                  r: float = 1, t: float = 1, max_revenue: float = 1) -> float:
+                  r: float = 1, t: float = 1, max_revenue: float = 1, name: str = None) -> float:
     '''
     Performs manual testing of agent policies by plotting their bidding behavior against 
     the theoretical benchmark and saving the resulting plot.
@@ -238,6 +286,8 @@ def manualTesting(agents: list, N: int, episode: int, n_episodes: int, auc_type:
     r_str = f"{int(r)}" if r == int(r) else f"{r}".replace('.', '_')
     fname = f"{int(n_episodes / 1000)}k_r{r_str}.png"
 
+    if name is not None:
+        fname = f"{int(n_episodes / 1000)}k_r{r_str}_{name}.png"
     plt.savefig(f"{dir_path}{fname}")
 
     return avg_error
@@ -272,23 +322,3 @@ def plot_errors(literature_error: list, loss_history: list, N: int, auction_type
     plt.xlabel('Episode')
     plt.ylabel('Loss')
     plt.savefig(f'{dir_path}/loss_history{int(n_episodes/1000)}k.png')
-  
-
-def create_gif(img_duration: float = 0.3) -> None:
-    '''
-    Creates an GIF from PNG image files.
-
-    Args:
-        img_duration (float): The duration of each frame in the GIF (in seconds). 
-                              Default is 0.3 seconds.
-
-    Returns:
-        None: The function creates and saves the GIF.
-    '''
-    input_folder = "results/.tmp/*.png"
-    output_gif = "results/gifs/evolution.gif"
-    png_files = sorted(glob.glob(input_folder))
-    frames = [imageio.imread(png) for png in png_files]
-    print(f"Creating GIF from {len(frames)} images")
-    imageio.mimsave(output_gif, frames, duration=img_duration)
-    print("GIF created successfully!")

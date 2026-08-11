@@ -1,6 +1,4 @@
-import os
 import random
-import shutil
 import timeit
 import numpy as np
 from datetime import timedelta
@@ -38,7 +36,44 @@ def generate_grid_actions(grid_N: int, max_revenue: float) -> list:
     grid_values = np.linspace(0, max_revenue, grid_N)
     return [val + random.uniform(0, max_revenue / grid_N) for val in grid_values]
 
-def log_episode(ep: int, obs: list, actions: list, rewards: list, show_gui: bool=True) -> None:
+    # x = np.linspace(0.0, 1.0, grid_N, dtype=float)
+    # w = np.sin(0.5 * np.pi * x)  # ∈ [0,1]
+    # return (max_revenue * w).tolist()
+
+
+def _expected_bid_curve(v, auction_type: str, n: int, t: float):
+    eps = 1e-12
+    if auction_type == 'first_price':
+        return ((n - 1) / n) * v
+    elif auction_type == 'second_price':
+        return v
+    elif auction_type == 'all_pay':
+        return (v ** n) / n
+    elif auction_type == 'partial_all_pay':
+        num = (v ** n) * (n - 1) / n
+        den = t + (1 - t) * (v ** (n - 1))
+        return num / (den + eps)
+    else:
+        raise ValueError(f"Auction type '{auction_type}' not recognized.")
+
+
+# --- dentro do MAtrainLoop, antes de usar:
+def compute_agent_errors(agents, ep, auction_type = 'partial_all_pay', t=1, num_points=100) -> float:
+    """Retorna a MÉDIA (entre agentes) do erro médio absoluto vs. lance ótimo ao longo de v em [0, upper_bound]."""
+    v = np.linspace(0.0, 1.0, num_points)
+    expected = _expected_bid_curve(v, auction_type, len(agents), t)
+
+    per_agent_mae = []
+    for ag in agents:
+        actions = [ag.choose_action([vj], ep, evaluation=1)[0] for vj in v]
+        err = float(np.mean(np.abs(np.asarray(actions, dtype=float) - expected)))
+        per_agent_mae.append(err)
+
+    return per_agent_mae
+
+
+
+def log_episode(ep: int, obs: list, actions: list, rewards: list) -> None:
     """
     Print the values, bids, and rewards of a given episode.
 
@@ -48,17 +83,26 @@ def log_episode(ep: int, obs: list, actions: list, rewards: list, show_gui: bool
         actions (list): Bids submitted by the agents.
         rewards (list): Rewards received by the agents.
     """
-    print(f'\nEpisode {ep}')
-    print('Values:  ', obs)
-    print('Bids:    ', actions)
-    print('Rewards: ', rewards)
+    print(f"\n\n\nEpisode {ep}")
+    print("-"*40)
+    print(f"{'Player':>6} | {'Value':>8} | {'Bid':>8} | {'Reward':>8}")
+    print("-"*40)
 
-    if show_gui:
-        show_auction_episode(obs, actions, rewards)
+    for i, (v, a, r) in enumerate(zip(obs, actions, rewards), start=1):
+        print(f"{i:6d} | {v:8.2f} | {a:8.2f} | {r:8.2f}")
+
+    print("-"*40)
+    LBL, W = 13, 10
+    winner = int(np.argmax(actions)) + 1
+    print(f"{'Winner:':<{LBL+4}}{'Player ' + str(winner):<{W}}")
+    print(f"{'Reward:':<{LBL}}{rewards[winner-1]:>{W}.2f}")
+    print(f"{'Average bid:':<{LBL}}{np.mean(actions):>{W}.2f}")
+    print("-"*40)
+
 
 def save_models_and_update(agents: list, auction_type: str, N: int, r: float, n_episodes: int, 
-                           ep: int, loss_history: list, literature_error: list, gif: bool, 
-                           decrease_factor: float):
+                           ep: int, loss_history: list, literature_error: list,
+                           decrease_factor: float) -> None:
     """
     Save agent models, update learning parameters, and optionally copy image files for GIF creation.
 
@@ -81,11 +125,6 @@ def save_models_and_update(agents: list, auction_type: str, N: int, r: float, n_
     decrease_learning_rate(agents, decrease_factor)
     plot_errors(literature_error, loss_history, N, auction_type, n_episodes)
 
-    if gif:
-        src = f'results/{auction_type}/N={N}/ag1_{int(n_episodes / 1000)}k_r{r}.png'
-        dst = f'results/.tmp/{ep}.png'
-        if os.path.exists(src):
-            shutil.copy(src, dst)
 
 def MAtrainLoop(maddpg, 
                 env, 
@@ -97,7 +136,8 @@ def MAtrainLoop(maddpg,
                 save_interval: int=10,
                 tl_flag: bool=False, 
                 extra_players: int=2,
-                show_gui: bool=False):
+                show_gui: bool=False,
+                t_list: list = None):
     """
     Multi-agent training loop for auction environments using MADDPG.
 
@@ -120,12 +160,49 @@ def MAtrainLoop(maddpg,
     N = len(agents)
     grid_N = 10
     loss_history, literature_error = [], []
+    conv_tol = 0.015 * N # tolerance for early stopping
+    patience = 10 # number of consecutive episodes to meet tolerance before stopping
+    last_t, fired = -1.0, set()
+    ok_streak = 0  # Counter for consecutive episodes meeting the convergence tolerance
 
     for ep in range(n_episodes):
+        # Update parameter t based on episode if t_list is provided
+        if t_list is not None:
+            idx = int(ep * len(t_list) / n_episodes)
+            t = round(t_list[min(idx, len(t_list)-1)], 2)
+            # env.t = t_list[min(idx, len(t_list)-1)]
         observations = env.reset()
         original_actions = [agents[i].choose_action(observations[i], ep)[0] for i in range(N)]
         original_rewards = env.step(observations, original_actions, r, t)
 
+        
+        # ---- EARLY STOP ---- #
+        if t_list is None:  # com Transfer Learning ligado, não interrompe cedo
+            errs = compute_agent_errors(agents, ep, auction_type=auction_type, t=t)
+            instant_ok = all(e <= conv_tol for e in errs)
+            # só começa a contar depois do mínimo de episódios
+            if instant_ok:
+                ok_streak += 1
+                print('OK STREAK', ok_streak)
+            else:
+                ok_streak = 0
+            # each 50 episodes, check for early stopping
+            if ep % 50 == 0:
+                pass
+                # print(f"Episode {ep}, Errors: {[f'{e:.4f}' for e in errs]}, Streak: {ok_streak}")
+
+            if ok_streak >= patience:
+                log_episode(ep, observations, original_actions, original_rewards)
+                hist = manualTesting(agents, N, ep, n_episodes, auc_type=auction_type, r=r, t=t,
+                                    max_revenue=env.upper_bound)
+                literature_error.append(np.mean(hist))
+                save_models_and_update(agents, auction_type, N, r, n_episodes, ep,
+                                    loss_history, literature_error, decrease_factor=0.99)
+                print(f"[EARLY STOP] ep={ep}, streak={ok_streak}, max|erro|={max(errs):.4f} ≤ {conv_tol:.4f}")
+                break
+        # -------------------- #
+        
+                
         batch_loss = []
 
         for idx in range(N):
@@ -136,12 +213,25 @@ def MAtrainLoop(maddpg,
                 test_actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(observations, test_actions, r, t)
                 maddpg.remember(observations[idx], test_actions[idx], rewards[idx], others_obs, others_actions)
-                loss = maddpg.learn(idx, flag=(tl_flag if extra_players > 0 else False), num_tiles=extra_players)
+                loss = maddpg.learn(auction_type, idx, flag=(tl_flag if extra_players > 0 else False), num_tiles=extra_players)
                 if loss is not None:
                     batch_loss.append(loss)
-                    
+
+
+        if t_list is not None:
+            for i, thr in enumerate((0.0, 1/3, 2/3)):
+                if i not in fired and last_t < thr <= t:
+                    manualTesting(agents, N, ep, n_episodes, auc_type=auction_type, r=r, t=t,
+                                max_revenue=env.upper_bound, name=f"t{t:.2f}")
+                    print(f"[CHECKPOINT] ep={ep} t={t:.2f} (thr={thr:.2f})")
+                    fired.add(i)
+                    break
+            last_t = t  
+
+
+
         if ep % save_interval == 0:
-            log_episode(ep, observations, original_actions, original_rewards, show_gui)
+            log_episode(ep, observations, original_actions, original_rewards)
 
             hist = manualTesting(agents, N, ep, n_episodes, auc_type=auction_type, r=r, t=t,
                                  max_revenue=env.upper_bound)
@@ -150,11 +240,8 @@ def MAtrainLoop(maddpg,
                 loss_history.append(np.mean(batch_loss))
 
             save_models_and_update(agents, auction_type, N, r, n_episodes, ep,
-                                   loss_history, literature_error, gif, decrease_factor=0.99)
+                                   loss_history, literature_error, decrease_factor=0.99)
 
-    if gif:
-        create_gif()
-        os.system('rm results/.tmp/*.png')
 
     elapsed_time = timeit.default_timer() - start_time
     print('\n\nTotal training time:', str(timedelta(seconds=elapsed_time)).split('.')[0])

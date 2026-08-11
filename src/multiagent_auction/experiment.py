@@ -13,8 +13,8 @@ class AuctionSimulationRunner:
                  n_episodes: int, 
                  create_gif: bool, 
                  n_players: int, 
-                 t: float,
                  noise_std: float,
+                 t: float,
                  ponderated_avg: bool, 
                  aversion_coef: float,
                  save_plot: bool,
@@ -45,8 +45,8 @@ class AuctionSimulationRunner:
         self.n_episodes = n_episodes
         self.create_gif = create_gif
         self.n_players = n_players
-        self.t = t
         self.noise_std = noise_std
+        self.t = t
         self.ponderated_avg = ponderated_avg
         self.aversion_coef = aversion_coef
         self.save_plot = save_plot
@@ -118,45 +118,79 @@ class AuctionSimulationRunner:
                          noise_std=0.2, tl_flag=self.tl, extra_players=self.extra_players)
 
         if not self.trained:
-            print('Training models...')
+            print("\n" + "="*40)
+            print("Training Configuration")
+            print("="*40)
+            print(f"Auction type:                {self.auction.replace('_', ' ').title()}")
+            print(f"Number of agents:            {self.n_players}")
+            print(f"Number of episodes:          {self.n_episodes}")
+            print(f"Risk aversion coefficient:   {self.aversion_coef}")
+            print(f"Transfer learning:           {'Enabled' if self.tl else 'Disabled'}")
+            print(f"Extra players (TL):          {self.extra_players}")
+            print(f"Partial all pay exponent:    {self.t if self.auction == 'partial_all_pay' else 'N/A'}")
+            print("="*40)
+
             MAtrainLoop(maddpg, env, self.n_episodes, self.auction, t=self.t, r=self.aversion_coef, 
                         gif=self.create_gif, save_interval=50, tl_flag=self.tl, 
                         extra_players=self.extra_players, show_gui=self.gui)
             
             if self.tl and self.extra_players == 0:
+                print(f"Transferring from auction '{self.auction}' to '{self.target_auction}' with N={self.n_players} agents...")
                 self.auction = self.target_auction
-                print(f"Transferring from auction '{self.auction} \
-                      ' to '{self.target_auction}' with N={self.n_players} agents...")
+                # self.auction = 'partial_all_pay'
+
+                # lo, hi = 0.01, 0.99 # min, max
+                # s = np.linspace(0, np.pi, 100)
+                # self.t_list = lo + (hi - lo) * 0.5 * (1 - np.cos(s))
+
+                x = np.linspace(0, 1, 100)
+                w = np.sin(0.5*np.pi*x)
+                
+                # Double the number of episodes for TL
+                # self.n_episodes *= 2
                 env = self.create_env(self.n_players)
                 MAtrainLoop(maddpg, env, self.n_episodes, self.auction, t=self.t, r=self.aversion_coef, 
                             gif=self.create_gif,save_interval=50, tl_flag=self.tl, 
-                            extra_players=self.extra_players, show_gui=self.gui)
+                            extra_players=self.extra_players, show_gui=self.gui, t_list=w)
 
         if self.tl:
-            for i in range(self.extra_players):
-                new_N = self.n_players + i + 1
-                prev_N = new_N - 1
-                is_last = (i == self.extra_players - 1)
-                tl_flag_iter = not is_last
-                extra_left = self.extra_players - i - 1 if not is_last else 0
+            # Tranfer learning without extra players, only transferring the auction type
+            if self.extra_players == 0:
+                source_auction = self.auction
+                print(f"Transferring from auction '{source_auction}' to '{self.target_auction}' with N={self.n_players} agents...")
+                self.load_agents(maddpg, self.n_players)
+                self.auction = self.target_auction
+                env = self.create_env(self.n_players)
+                MAtrainLoop(maddpg, env, self.n_episodes, self.auction, t=self.t, r=self.aversion_coef,
+                            gif=self.create_gif, save_interval=50, tl_flag=self.tl, extra_players=self.extra_players,
+                            show_gui=self.gui)
 
-                print(f'\nTransfer learning step {i+1}/{self.extra_players}: from {prev_N} to {new_N} agents\n')
+            else: # Transfer learning with extra players, incrementally adding agents 
+                
+                for i in range(self.extra_players):
+                    new_N = self.n_players + i + 1
+                    prev_N = new_N - 1
+                    is_last = (i == self.extra_players - 1)
+                    tl_flag_iter = not is_last
+                    extra_left = self.extra_players - i - 1 if not is_last else 0
 
-                maddpg = MADDPG(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001, gamma=0.99, 
-                                BS=self.batch_size, fc1=100, fc2=100, n_actions=1,
-                                n_agents=new_N, total_eps=self.n_episodes, noise_std=0.2,
-                                tl_flag=tl_flag_iter, extra_players=extra_left)
+                    print(f'\nTransfer learning step {i+1}/{self.extra_players}: from {prev_N} to {new_N} agents\n')
 
-                for k in range(prev_N):
-                    model_name = f"{self.auction}_N_{prev_N}_ag{k}_r{self.aversion_coef}_{self.n_episodes}ep"
-                    maddpg.agents[k].load_models(model_name)
+                    maddpg = MADDPG(alpha=0.000025, beta=0.00025, input_dims=1, tau=0.001, gamma=0.99, 
+                                    BS=self.batch_size, fc1=100, fc2=100, n_actions=1,
+                                    n_agents=new_N, total_eps=self.n_episodes, noise_std=0.2,
+                                    tl_flag=tl_flag_iter, extra_players=extra_left)
 
-                self.initialize_new_agent_from_random(maddpg, new_agent_idx=new_N - 1)
+                    for k in range(prev_N):
+                        model_name = f"{self.auction}_N_{prev_N}_ag{k}_r{self.aversion_coef}_{self.n_episodes}ep"
+                        maddpg.agents[k].load_models(model_name)
 
-                env = self.create_env(new_N)
-                MAtrainLoop(maddpg, env, self.n_episodes, self.auction,r=self.aversion_coef, 
-                            gif=self.create_gif,save_interval=50, tl_flag=tl_flag_iter, 
-                            extra_players=extra_left)
+                    self.initialize_new_agent_from_random(maddpg, new_agent_idx=new_N - 1)
+
+                    env = self.create_env(new_N)
+                    MAtrainLoop(maddpg, env, self.n_episodes, self.auction,r=self.aversion_coef, 
+                                gif=self.create_gif,save_interval=50, tl_flag=tl_flag_iter, 
+                                extra_players=extra_left)
                 
         if self.trained and not self.tl:
             print('Evaluating models...')

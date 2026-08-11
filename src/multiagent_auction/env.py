@@ -216,8 +216,8 @@ class MAAllPayAuctionEnv(BaseAuctionEnv):
         Returns:
             list: Reward of each player.
         """
-        alpha = 0.1
-        rewards = [-b - alpha for b in bids]
+        alpha = 0.1 # penalty for losing the auction
+        rewards = [-(b**r) - alpha for b in bids]
         idx = np.argmax(bids)
         winner_reward = values[idx] - bids[idx]
         rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward

@@ -170,7 +170,9 @@ class ActorNetwork(Network):
         T.nn.init.uniform_(layer.weight.data, -limit, limit)
         T.nn.init.uniform_(layer.bias.data, -limit, limit)
 
-    def forward(self, state: T.Tensor, max_revenue: float = 1) -> T.Tensor:
+
+
+    def forward(self, state: T.Tensor, auction_type: str, max_revenue: float = 1) -> T.Tensor:
         """
         Forward pass. Garante que 'state' seja 2D (batch, feat) e esteja no device certo.
         """
@@ -191,4 +193,8 @@ class ActorNetwork(Network):
 
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
-        return T.sigmoid(self.mu(x)) * max_revenue
+        z = self.mu(x)
+        return T.sigmoid(z)
+    
+        # a = 0.5 * (T.tanh(z) + 1.0)
+        # return a
