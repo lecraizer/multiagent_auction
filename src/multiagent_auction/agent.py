@@ -69,8 +69,7 @@ class Agent(object):
         Args:
             observation (np.ndarray): The current state of the environment.
             episode (int): Current episode number, used for noise decay.
-            evaluation (bool, optional): If True, no exploration noise is added. 
-                                         Defaults is False.
+            evaluation (bool, optional): If True, no exploration noise is added. Defaults is False.
             
         Returns:
             np.ndarray: The selected action.
@@ -102,8 +101,7 @@ class Agent(object):
         Update target network parameters.
         
         Args:
-            tau (float, optional): Update parameter. If None, use the instance's tau value. 
-                                   Default is None.
+            tau (float, optional): Update parameter. If None, use the instance's tau value. Default is None.
         """
         if tau is None: tau = self.tau
         for target_param, param in zip(self.target_critic.parameters(), 

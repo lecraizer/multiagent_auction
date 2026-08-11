@@ -12,7 +12,7 @@ class ReplayBuffer(object):
             max_size (int): Maximum number of transitions to store.
             input_shape (int): Dimension of the state vector.
             n_actions (int): Dimension of the action vector.
-            num_agents (int, optional): Total number of agents in the environment (default is 2).
+            num_agents (int, optional): Total number of agents in the environment. Default is 2.
         """
         self.mem_size = max_size
         self.mem_cntr = 0
@@ -48,6 +48,7 @@ class ReplayBuffer(object):
                          others_actions: np.ndarray) -> None:
         """
         Stores state, action, reward, others_states and others_actions in the memory buffer.
+        The memory counter is updated after storing the transition.
 
         Args:
             state (np.ndarray): Current agent's observation.
@@ -55,8 +56,6 @@ class ReplayBuffer(object):
             reward (float): Reward received after taking the action.
             others_states (np.ndarray): Concatenated observations of other agents.
             others_actions (np.ndarray): Concatenated actions of other agents.
-
-        The memory counter is updated after storing the transition.
         """
         index = self.mem_cntr % self.mem_size
         self.state_memory[index] = state

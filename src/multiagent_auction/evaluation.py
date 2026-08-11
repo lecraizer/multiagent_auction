@@ -5,7 +5,7 @@ def get_empirical_revenue(env, own_value: float, own_bid: float, others_bids: li
     Estimate the expected revenue for a given bid based on sampled opponent bids.
 
     Args:
-        env:
+        env (AuctionEnv): Auction environment instance.
         own_value (float): Agent's private value.
         own_bid (float): Agent's chosen bid.
         others_bids (list): List of bid samples from other agents.
@@ -24,7 +24,7 @@ def get_all_bids_except(env, agents: list, k: int, n_bids: int) -> list:
     Generate bid samples from all agents except one.
 
     Args:
-        env:
+        env (AuctionEnv): Auction environment instance.
         agents (list): List of agent objects.
         k (int): Index of the agent to exclude.
         n_bids (int): Number of bid samples to generate per agent.
@@ -41,14 +41,13 @@ def get_all_bids_except(env, agents: list, k: int, n_bids: int) -> list:
             others_bids.append(bids)
     return others_bids
     
-def evaluate_agents(env, agents: list, n_bids: int=100, grid_precision: int=100, 
-                    auc_type: str='first_price') -> None:
+def evaluate_agents(env, agents: list, n_bids: int=100, grid_precision: int=100) -> None:
     """
     Evaluate the trained agents by comparing their bidding strategy to the optimal 
     empirical strategy.
 
     Args:
-        env:
+        env (AuctionEnv): Auction environment instance.
         agents (list): List of trained agents.
         n_bids (int): Number of samples to estimate other agents' bid distributions.
         grid_precision (int): Number of points in bid grid search.

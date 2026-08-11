@@ -13,7 +13,5 @@
   "ponderated": 100,
   "save": false,
   "gif": false,
-  "alert": true,
-  "executions": 1,
   "show_gui": false
 }
