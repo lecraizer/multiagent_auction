@@ -1,17 +1,16 @@
 {
   "auction": "first_price",
   "target_auction": "first_price",
-  "episodes": 3000,
-  "players": 3,
-  "aversion_coef": 0.5,
+  "episodes": 2000,
+  "players": 2,
+  "aversion_coef": null,
   "trained": 0,
-  "transfer_learning": 1,
-  "extra_players": 2,
+  "transfer_learning": 0,
+  "extra_players": 0,
+  "gradient_floor": 0.05,
   "batch": 64,
   "noise": 0.2,
   "all_pay_exponent": 0.75,
   "ponderated": 100,
-  "save": false,
-  "gif": false,
-  "show_gui": false
+  "save": false
 }

@@ -50,22 +50,23 @@ class MAFirstPriceAuctionEnv(BaseAuctionEnv):
         """
         super().__init__(n_players)
 
-    def step(self, values: list[float], bids: list[float], r: float, t: float) -> list[float]:
+    def step(self, values: list[float], bids: list[float], r: list[float], t: float) -> list[float]:
         """
         Calculate rewards for all players based on their private values and bids.
         
         Args:
             values (list): Private values for each player.
             bids (list): Bids made by each player.
-            r (float): Risk adjustment parameter.
+            r (list): Risk adjustment parameter for each player.
         
         Returns:
             list: Rewards for each player. Only the winner gets a non-zero reward.
         """
+        assert len(r) == self.n_players
         rewards = [0] * self.n_players
         idx = np.argmax(bids)
         winner_reward = values[idx] - bids[idx]
-        rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
+        rewards[idx] = np.sign(winner_reward) * np.abs(winner_reward)**r[idx]
         return rewards
 
     def reset(self) -> list[float]:
@@ -93,7 +94,7 @@ class MASecondPriceAuctionEnv(BaseAuctionEnv):
         """
         super().__init__(n_players)
 
-    def step(self, values: list[float], bids: list[float], r: float, t: float) -> list[float]:
+    def step(self, values: list[float], bids: list[float], r: list[float], t: float) -> list[float]:
         """
         Calculate the rewards for all players based on their bids and private values.
         The player with the highest bid wins the auction but pays the second-highest bid.
@@ -101,16 +102,23 @@ class MASecondPriceAuctionEnv(BaseAuctionEnv):
         Args:
             values (list): Private values for each player.
             bids (list): Bids submitted by each player.
-            r (float): Risk adjustment parameter.
+            r (list): Risk adjustment parameter for each player.
 
         Returns:
             list: Rewards assigned to each player.
         """
         rewards = [0] * self.n_players
+
         idxs = np.argsort(bids)[-2:]
         max_idx, second_max_idx = idxs[1], idxs[0]
+
         winner_reward = values[max_idx] - bids[second_max_idx]
-        rewards[max_idx] = winner_reward**r if winner_reward > 0 else winner_reward
+
+        rewards[max_idx] = (
+            np.sign(winner_reward)
+            * np.abs(winner_reward) ** r[max_idx]
+        )
+
         return rewards
 
     def reset(self) -> list[float]:
@@ -120,7 +128,18 @@ class MASecondPriceAuctionEnv(BaseAuctionEnv):
         Returns:
             list: New private values for each player.
         """
-        return [random.random() for _ in range(self.n_players)]
+        # return [random.random() for _ in range(self.n_players)]
+        values = []
+        for _ in range(self.n_players):
+            if random.random() < 0.15:
+                if random.random() < 0.5:
+                    values.append(random.uniform(0.0, 0.1))
+                else:
+                    values.append(random.uniform(0.9, 1.0))
+            else:
+                values.append(random.random())
+
+        return values
     
     def value_paid(self, own_bid: float, bids: list[float]) -> float:
         """
@@ -203,23 +222,34 @@ class MAAllPayAuctionEnv(BaseAuctionEnv):
         """
         super().__init__(n_players)
 
-    def step(self, values: list[float], bids: list[float], r: float, t: float) -> list[float]:
+    def step(self, values: list[float], bids: list[float], r: list[float], t: float) -> list[float]:
         """
         Calculate the reward of all players based on their private values and bids.
         
         Args:
             values (list): Private value of each player.
             bids (list): Bids made by each player.
-            r (float): Risk adjustment parameter.
+            r (list): Risk adjustment parameter for each player.
         
         Returns:
             list: Reward of each player.
         """
-        alpha = 0.1 # penalty for losing the auction
-        rewards = [-(b**r) - alpha for b in bids]
+        alpha = 0.1  # penalty for losing the auction
+
+        rewards = [
+            -(b ** r[i]) - alpha
+            for i, b in enumerate(bids)
+        ]
+
         idx = np.argmax(bids)
+
         winner_reward = values[idx] - bids[idx]
-        rewards[idx] = winner_reward**r if winner_reward > 0 else winner_reward
+
+        rewards[idx] = (
+            np.sign(winner_reward)
+            * np.abs(winner_reward) ** r[idx]
+        )
+
         return rewards
 
     def reset(self) -> list[float]:

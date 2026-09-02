@@ -34,7 +34,8 @@ class MADDPG:
                  beta: float=0.00025, 
                  input_dims: int=1, 
                  tau: float=0.001, 
-                 gamma: float=0.99, 
+                 gamma: float=0.99,
+                 gradient_floor: float = 0.05, 
                  BS: int=64, 
                  fc1: int=64, 
                  fc2: int=64, 
@@ -52,13 +53,19 @@ class MADDPG:
                                      layer2_size=fc2, n_agents=self.num_agents,
                                      n_actions=n_actions, total_eps=total_eps, 
                                      noise_std=noise_std, tl_flag=tl_flag,
+                                     gradient_floor=gradient_floor,
                                      extra_players=extra_players))
             
         self.batch_size = BS
         self.gamma = gamma
         self.max_size = 1000000
-        self.memory = ReplayBuffer(self.max_size, input_dims, n_actions, self.num_agents)
-        self.short_memory = ReplayBuffer(1, input_dims, n_actions, self.num_agents)
+        self.memory = [ReplayBuffer(self.max_size, input_dims, n_actions, self.num_agents)
+            for _ in range(self.num_agents)
+        ]
+
+        self.short_memory = [ReplayBuffer(1, input_dims, n_actions, self.num_agents)
+            for _ in range(self.num_agents)
+        ]
 
     def _create_ghosts(self, array: np.ndarray, num_tiles: int) -> np.ndarray:
         """
@@ -206,7 +213,7 @@ class MADDPG:
 
         self._train_actor(agent, idx, state, others_states, flag, num_tiles, auction_type=auction_type)
 
-    def remember(self, state: T.tensor, action: T.tensor, reward: T.tensor, others_states: T.tensor, 
+    def remember(self, idx, state: T.tensor, action: T.tensor, reward: T.tensor, others_states: T.tensor, 
                  others_actions: T.tensor) -> None:
         """
         Stores a transition in both long-term and short-term memory buffers.
@@ -215,8 +222,8 @@ class MADDPG:
             state, action, reward: Agent's transition tuple
             others_states, others_actions: Transitions of the other agents
         """
-        self.memory.store_transition(state, action, reward, others_states, others_actions)
-        self.short_memory.store_transition(state, action, reward, others_states, others_actions)
+        self.memory[idx].store_transition(state, action, reward, others_states, others_actions)
+        self.short_memory[idx].store_transition(state, action, reward, others_states, others_actions)
 
     def learn(self, auction_type, idx: int, flag: bool=False, num_tiles: int=3) -> None:
         """
@@ -229,5 +236,5 @@ class MADDPG:
             flag (bool): Whether to use ghost agents
             num_tiles (int): Number of ghost agents to add
         """
-        self._learn_from_memory(self.memory, idx, flag, num_tiles, auction_type=auction_type)
-        self._learn_from_memory(self.short_memory, idx, flag, num_tiles, auction_type=auction_type)
+        self._learn_from_memory(self.memory[idx], idx, flag, num_tiles, auction_type=auction_type)
+        self._learn_from_memory(self.short_memory[idx], idx, flag, num_tiles, auction_type=auction_type)

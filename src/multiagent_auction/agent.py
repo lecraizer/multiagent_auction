@@ -11,7 +11,8 @@ class Agent(object):
                  beta: float, 
                  input_dims: int, 
                  tau: float, 
-                 gamma: float = 0.99, 
+                 gamma: float = 0.99,
+                 gradient_floor: float = 0.05, 
                  n_agents: int = 2, 
                  n_actions: int = 1, 
                  layer1_size: int = 400, 
@@ -45,15 +46,16 @@ class Agent(object):
         self.batch_size = batch_size
         self.total_episodes = total_eps
         self.noise_std = noise_std
-
+        self.gradient_floor = gradient_floor
         self.actor = ActorNetwork(alpha, input_dims, layer1_size, layer2_size, n_actions=n_actions, 
-                                  name='actor', n_agents=n_agents)
+                                  name='actor', n_agents=n_agents, gradient_floor=self.gradient_floor)
 
         self.critic = CriticNetwork(beta, input_dims, layer1_size, layer2_size, n_actions=n_actions, 
                                     name='critic', n_agents=n_agents, flag=tl_flag, extra=extra_players)
 
         self.target_actor = ActorNetwork(alpha, input_dims, layer1_size, layer2_size, n_actions=n_actions, 
-                                         name='target_actor', n_agents=n_agents)
+                                         name='target_actor', n_agents=n_agents,
+                                         gradient_floor=self.gradient_floor)
         
         self.target_critic = CriticNetwork(beta, input_dims, layer1_size, layer2_size, n_actions=n_actions,
                                            name='target_critic', n_agents=n_agents, flag=tl_flag, 

@@ -5,6 +5,32 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
+
+
+class SigmoidWithGradientFloor(T.autograd.Function):
+    @staticmethod
+    def forward(ctx, input, min_grad=0.05):
+        output = T.sigmoid(input)
+        ctx.save_for_backward(output)
+        ctx.min_grad = min_grad
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        output, = ctx.saved_tensors
+
+        sigmoid_grad = output * (1 - output)
+
+        modified_grad = T.clamp(
+            sigmoid_grad,
+            min=ctx.min_grad
+        )
+
+        return grad_output * modified_grad, None
+
+
+
+    
 class Network(nn.Module):
     """
     Provides common functionality for saving and loading model checkpoints.
@@ -131,6 +157,7 @@ class ActorNetwork(Network):
                  n_actions: int, 
                  name: str, 
                  n_agents: int = 2, 
+                 gradient_floor: float = 0.05,
                  chkpt_dir: str = 'models/actor') -> None:
         """
         Initialize the actor network.
@@ -143,12 +170,14 @@ class ActorNetwork(Network):
             n_actions (int): Dimensionality of the action space.
             name (str): Name identifier for the network.
             n_agents (int, optional): Number of agents in the environment. Defaults is 2.
+            gradient_floor (float, optional): Floor for gradient clipping. Defaults is 0.05.
             chkpt_dir (str, optional): Directory for checkpoint files. 
                                        Defaults is 'models/actor'.
         """
         super(ActorNetwork, self).__init__(name, chkpt_dir)
         self.type = 'actor'
         self.n_agents = n_agents
+        self.gradient_floor = gradient_floor
 
         self.fc1 = nn.Linear(input_dims, fc1_dims)        
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
@@ -165,7 +194,7 @@ class ActorNetwork(Network):
         Uses uniform distribution with calculated scaling factors based on
         the size of each layer.
         """
-        fan_in = layer.weight.data.size()[0]
+        fan_in = layer.in_features
         limit = scale / np.sqrt(fan_in)
         T.nn.init.uniform_(layer.weight.data, -limit, limit)
         T.nn.init.uniform_(layer.bias.data, -limit, limit)
@@ -194,7 +223,7 @@ class ActorNetwork(Network):
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
         z = self.mu(x)
-        return T.sigmoid(z)
-    
-        # a = 0.5 * (T.tanh(z) + 1.0)
-        # return a
+        return SigmoidWithGradientFloor.apply(z, self.gradient_floor)
+        # return T.sigmoid(z)
+        # return 0.5 * (F.softsign(z) + 1.0)
+        # return F.hardsigmoid(z)

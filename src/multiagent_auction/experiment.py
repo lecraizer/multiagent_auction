@@ -11,16 +11,16 @@ class AuctionSimulationRunner:
                  batch_size: int, 
                  trained: bool, 
                  n_episodes: int, 
-                 create_gif: bool, 
+                 gradient_floor: float,
                  n_players: int, 
                  noise_std: float,
                  t: float,
                  ponderated_avg: bool, 
-                 aversion_coef: float,
+                 aversion_coef: list,
                  save_plot: bool,
                  tl: bool, 
                  extra_players: int, 
-                 gui: bool):
+                 ):
         """
         Initialize the simulation runner with configuration parameters.
 
@@ -29,7 +29,7 @@ class AuctionSimulationRunner:
             batch_size (int): Batch size for training.
             trained (bool): Whether to evaluate pre-trained models or train new ones.
             n_episodes (int): Number of training episodes.
-            create_gif (bool): Whether to save training GIFs.
+            gradient_floor (float): Floor value for gradient clipping.
             n_players (int): Initial number of agents.
             noise_std (float): Standard deviation for action noise.
             aversion_coef (float): Risk aversion coefficient.
@@ -42,7 +42,7 @@ class AuctionSimulationRunner:
         self.batch_size = batch_size
         self.trained = trained
         self.n_episodes = n_episodes
-        self.create_gif = create_gif
+        self.gradient_floor = gradient_floor
         self.n_players = n_players
         self.noise_std = noise_std
         self.t = t
@@ -51,7 +51,6 @@ class AuctionSimulationRunner:
         self.save_plot = save_plot
         self.tl = tl
         self.extra_players = extra_players
-        self.gui = gui
 
     def create_env(self, N: int):
         """
@@ -89,6 +88,8 @@ class AuctionSimulationRunner:
         """
         for k in range(N):
             name = f"{self.auction}_N_{N}_ag{k}_r{self.aversion_coef}_{self.n_episodes}ep"
+            # name = f"{self.auction}_N_{N}_ag{k}_r[1.0, 1.0, 1.0]_{self.n_episodes}ep"
+            print(name)
             maddpg.agents[k].load_models(name)
 
     def initialize_new_agent_from_random(self, maddpg: MADDPG, new_agent_idx: int) -> None:
@@ -130,8 +131,8 @@ class AuctionSimulationRunner:
             print("="*40)
 
             MAtrainLoop(maddpg, env, self.n_episodes, self.auction, t=self.t, r=self.aversion_coef, 
-                        gif=self.create_gif, save_interval=50, tl_flag=self.tl, 
-                        extra_players=self.extra_players, show_gui=self.gui)
+                        gradient_floor=self.gradient_floor, save_interval=50, tl_flag=self.tl, 
+                        extra_players=self.extra_players)
             
             if self.tl and self.extra_players == 0:
                 print(f"Transferring from auction '{self.auction}' to '{self.target_auction}' with N={self.n_players} agents...")
@@ -149,8 +150,8 @@ class AuctionSimulationRunner:
                 # self.n_episodes *= 2
                 env = self.create_env(self.n_players)
                 MAtrainLoop(maddpg, env, self.n_episodes, self.auction, t=self.t, r=self.aversion_coef, 
-                            gif=self.create_gif,save_interval=50, tl_flag=self.tl, 
-                            extra_players=self.extra_players, show_gui=self.gui, t_list=w)
+                            gradient_floor=self.gradient_floor, save_interval=50, tl_flag=self.tl, 
+                            extra_players=self.extra_players)
 
         if self.tl:
             # Tranfer learning without extra players, only transferring the auction type
@@ -161,8 +162,8 @@ class AuctionSimulationRunner:
                 self.auction = self.target_auction
                 env = self.create_env(self.n_players)
                 MAtrainLoop(maddpg, env, self.n_episodes, self.auction, t=self.t, r=self.aversion_coef,
-                            gif=self.create_gif, save_interval=50, tl_flag=self.tl, extra_players=self.extra_players,
-                            show_gui=self.gui)
+                            gradient_floor=self.gradient_floor, save_interval=50, tl_flag=self.tl, 
+                            extra_players=self.extra_players)
 
             else: # Transfer learning with extra players, incrementally adding agents 
                 
@@ -188,7 +189,7 @@ class AuctionSimulationRunner:
 
                     env = self.create_env(new_N)
                     MAtrainLoop(maddpg, env, self.n_episodes, self.auction,r=self.aversion_coef, 
-                                gif=self.create_gif,save_interval=50, tl_flag=tl_flag_iter, 
+                                gradient_floor=self.gradient_floor, save_interval=50, tl_flag=tl_flag_iter, 
                                 extra_players=extra_left)
                 
         if self.trained and not self.tl:

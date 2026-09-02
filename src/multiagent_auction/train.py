@@ -130,13 +130,12 @@ def MAtrainLoop(maddpg,
                 env, 
                 n_episodes: int, 
                 auction_type: str='first_price', 
-                r: float=1, 
+                r: list=[1], 
                 t: float = 1,
-                gif: bool=False, 
+                gradient_floor: float = 0.05,
                 save_interval: int=10,
                 tl_flag: bool=False, 
                 extra_players: int=2,
-                show_gui: bool=False,
                 t_list: list = None):
     """
     Multi-agent training loop for auction environments using MADDPG.
@@ -146,12 +145,12 @@ def MAtrainLoop(maddpg,
         env (AuctionEnv): Auction environment instance.
         n_episodes (int): Number of training episodes.
         auction_type (str): Type of auction.
-        r (float): Reward shaping parameter.
+        r (list): Reward shaping parameters.
         max_revenue (float): Maximum theoretical revenue for grid action sampling.
-        gif (bool): Whether to generate GIF snapshots during training.
         save_interval (int): Interval (in episodes) at which to log and save models.
         tl_flag (bool): Whether to enable transfer learning.
         extra_players (int): Number of hypothetical agents for extended learning.
+        gradient_floor (float): Floor for gradient clipping.
     """
     np.random.seed(0)
     start_time = timeit.default_timer()
@@ -175,7 +174,7 @@ def MAtrainLoop(maddpg,
         original_actions = [agents[i].choose_action(observations[i], ep)[0] for i in range(N)]
         original_rewards = env.step(observations, original_actions, r, t)
 
-        
+        '''
         # ---- EARLY STOP ---- #
         if t_list is None:  # com Transfer Learning ligado, não interrompe cedo
             errs = compute_agent_errors(agents, ep, auction_type=auction_type, t=t)
@@ -201,7 +200,7 @@ def MAtrainLoop(maddpg,
                 print(f"[EARLY STOP] ep={ep}, streak={ok_streak}, max|erro|={max(errs):.4f} ≤ {conv_tol:.4f}")
                 break
         # -------------------- #
-        
+        '''
                 
         batch_loss = []
 
@@ -212,7 +211,7 @@ def MAtrainLoop(maddpg,
             for new_action in grid_actions:
                 test_actions = original_actions[:idx] + [new_action] + original_actions[idx+1:]
                 rewards = env.step(observations, test_actions, r, t)
-                maddpg.remember(observations[idx], test_actions[idx], rewards[idx], others_obs, others_actions)
+                maddpg.remember(idx, observations[idx], test_actions[idx], rewards[idx], others_obs, others_actions)
                 loss = maddpg.learn(auction_type, idx, flag=(tl_flag if extra_players > 0 else False), num_tiles=extra_players)
                 if loss is not None:
                     batch_loss.append(loss)
